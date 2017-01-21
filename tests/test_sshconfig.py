@@ -74,7 +74,6 @@ def test_add():
 
 def test_save():
     import tempfile
-
     tc = os.path.join(tempfile.gettempdir(), "temp_ssh_config-4123")
     try:
         c = sshconfig.read_ssh_config(test_config)
