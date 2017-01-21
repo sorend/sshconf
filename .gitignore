@@ -4,3 +4,5 @@ venv
 .cache
 *.egg-info
 .eggs
+dist
+build
