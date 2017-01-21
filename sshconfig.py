@@ -137,6 +137,7 @@ class SshConfig(object):
         self.lines_.append(dict(line="Host\t%s" % host, host=host, key="Host", value=host))
         for k, v in kwargs.items():
             self.lines_.append(dict(line="\t%s\t%s" % (k, str(v)), host=host, key=k, value=v))
+        self.lines_.append(dict(line="", host=None))
 
     def config(self):
         """

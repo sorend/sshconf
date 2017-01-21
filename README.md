@@ -14,7 +14,7 @@ Installation and usage
 
 Install through pip is the most easy way. You can install from the Git source directly:
 
-    pip install -e https://github.com/sorend/sshconfig.git
+    pip install -e git+https://github.com/sorend/sshconfig.git#egg=sshconfig
 
 Below is some example use:
 
