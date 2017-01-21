@@ -9,7 +9,7 @@ deploy:
 - provider: pypi
   distributions: sdist
   server: https://pypi.python.org/pypi
-  user: sorend
+  user: sorenpypi
   password:
     secure: QT1rCjutYUf3Gn7ocoX9/4Tsx94642+mnfsxNtAodbNTmO1BRBcOCLhflHpub+6R71RfgesnrsCJ5JN6uGCfsRx++raq41f+/egUnNvYJYrlD8rF/YYcSyMApqie+RQlUPYg/wBqOdLlDe7zQtYjBxt8XVbSqfqSKgKUL2ysavoMe498z1up/YjBfrAhRYM3d7Dg0zjtj2oYr0HkAVie+vMIOybLpNNoxDMs0aQ6AyXM1RMwXvxQoXXo8E+qtpEjI3zvoWL0uNrxUUKMuW+oMuVcTXnXKapAIYerf7z6u3bZESOtaJgw25RK6hE8akGVSn5fFZ0FtoJM2oNYlzWH13+D8uEZY+0ufEuc3o3tx1cnCSzOYYIXQ9EG2eg0ltHm1Qh6DCCJooCqHSIn23oeZMovH/L1rUZuZMSVLCaDKfHMRnm/Vl8JC8prWRhJI81H8Y2GR4RPHsNj653W0+lGvrzwgiIcFuB1kObV0Zx5BhXmpWLDDBws7zL9Wz31obLBa97xK0/qedpkWQbYg1Q7VRZCV6f9wYHcNtWaejya3ZUz1osMmukHhArZx/XGYzfAsKFyp+99w5yNjOPpBUVBn237oQe2LSaysLTjQKbAlWlD2KDpHBAGZ6g+zyKbK34Q89j0Iyr1nO9PbbSWyPlYwRIZTaAtQ5Q0CU0voXr3dT8=
   on:
