@@ -1,8 +1,8 @@
 
-sshconfig
+sshconf
 ===========
 
-Sshconfig is a library for reading and modifying your ssh/config file in a non-intrusive way, meaning
+Sshconf is a library for reading and modifying your ssh/config file in a non-intrusive way, meaning
 your file should look more or less the same after modifications. Idea is to keep it simple,
 so you can modify it for your needs.
 
@@ -14,12 +14,13 @@ Installation and usage
 
 Install through pip is the most easy way. You can install from the Git source directly:
 
-    pip install -e git+https://github.com/sorend/sshconfig.git#egg=sshconfig
+    pip install sshconf
+
 
 Below is some example use:
 
     from __future__ import print_function
-    from sshconfig import read_ssh_config, empty_ssh_config
+    from sshconf import read_ssh_config, empty_ssh_config
     from os.path import expanduser
 
     c = read_ssh_config(expanduser("~/.ssh/config"))
@@ -47,4 +48,4 @@ Below is some example use:
 About
 -----
 
-sshconfig is created at the Department of Computer Science at Sri Venkateswara University, Tirupati, INDIA by a student as part of his projects.
+sshconf is created at the Department of Computer Science at Sri Venkateswara University, Tirupati, INDIA by a student as part of his projects.
