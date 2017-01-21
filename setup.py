@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup
 
-MY_VERSION = '0.0.1'
+MY_VERSION = '0.0.2'
 
 setup(
     name='sshconfig',
