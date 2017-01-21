@@ -1,0 +1,13 @@
+
+# comment
+Host *
+     User       something
+
+# comment 2
+Host svu
+     Hostname   www.svuniversity.ac.in
+     Port       22
+     ProxyCommand       nc -w 300 -x localhost:9050 %h %p
+
+# another comment
+# bla bla
