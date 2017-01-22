@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup
 
-MY_VERSION = '0.0.1'
+MY_VERSION = '0.0.2'
 
 setup(
     name='sshconf',
@@ -18,7 +18,7 @@ setup(
     tests_require=['pytest'],
     classifiers=(
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 2',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Libraries',
     )
