@@ -44,6 +44,8 @@ Below is some example use:
     c2.add("svu", Hostname="ssh.svu.local", User="teachmca", Port=22)
     c2.write("newconfig")
 
+    c2.remove("svu")  # remove
+
 
 About
 -----
