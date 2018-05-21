@@ -3,7 +3,7 @@ sshconf
 ===========
 
 [![Build Status](https://travis-ci.org/sorend/sshconf.svg?branch=master)](https://travis-ci.org/sorend/sshconf)
-[![PyPi version](https://pypip.in/v/sshconf/badge.png)]
+[![PyPi version](https://pypip.in/v/sshconf/badge.png)](https://github.com/sorend/sshconf)
 
 Sshconf is a library for reading and modifying your ssh/config file in a non-intrusive way, meaning
 your file should look more or less the same after modifications. Idea is to keep it simple,
