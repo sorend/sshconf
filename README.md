@@ -28,7 +28,9 @@ Below is some example use:
 
     # assuming you have a host "svu"
     print("svu host", c.host("svu"))  # print the settings
-    c.update("svu", Hostname="ssh.svu.local", Port=1234)
+    c.set("svu", Hostname="ssh.svu.local", Port=1234)
+    print("svu host now", c.host("svu"))
+    c.unset("svu", "port")
     print("svu host now", c.host("svu"))
 
     c.add("newsvu", Hostname="ssh-new.svu.local", Port=22, User="stud1234")
