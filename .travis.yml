@@ -1,10 +1,10 @@
 language: python
 python:
-- '2.7'
+- '3.6'
 install:
 - pip install -e .
 script:
-- py.test .
+- pytest
 deploy:
 - provider: pypi
   distributions: sdist

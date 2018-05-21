@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-import subprocess
-from setuptools import setup
+from setuptools import setup, Distribution
+Distribution().fetch_build_eggs('versiontag')
+from versiontag import get_version, cache_git_tag
 
-# git describe --tags --long --dirty=d
-# tag-runningversion
-MY_VERSION = subprocess.check_output(['git', 'describe', '--tags']).decode('utf-8').strip()
+cache_git_tag()
+
+MY_VERSION = get_version(pypi=True)
 
 setup(
     name='sshconf',

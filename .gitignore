@@ -7,3 +7,4 @@ venv
 dist
 build
 .pytest_cache
+version.txt
