@@ -63,7 +63,7 @@ KNOWN_PARAMS = (
     "LogLevel"
     "MACs"
     "Match"
-    "NoHostAuthenticationForLocalhostv
+    "NoHostAuthenticationForLocalhost"
     "NumberOfPasswordPrompts"
     "PasswordAuthentication"
     "PermitLocalCommand"
