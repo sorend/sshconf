@@ -24,8 +24,8 @@ def test_set():
     print(c.config())
     print("svu", c.host('svu'))
     
-    assert "\tCompression\tno" in c.config()
-    assert "\tPort\t2222" in c.config()
+    assert "  Compression no" in c.config()
+    assert "  Port 2222" in c.config()
 
 def test_set_host_failed():
     c = sshconf.read_ssh_config(test_config)
@@ -41,8 +41,8 @@ def test_rename():
 
     c.rename("svu", "svu-new")
 
-    assert "Host\tsvu-new" in c.config()
-    assert "Host\tsvu\n" not in c.config()
+    assert "Host svu-new" in c.config()
+    assert "Host svu\n" not in c.config()
     assert "svu" not in c.hosts()
     assert "svu-new" in c.hosts()
 
@@ -69,7 +69,7 @@ def test_add():
     assert "venkateswara" in c.hosts()
     assert c.host("venkateswara")["proxycommand"] == "nc -w 300 -x localhost:9050 %h %p"
 
-    assert "Host\tvenkateswara" in c.config()
+    assert "Host venkateswara" in c.config()
 
     with pytest.raises(ValueError):
         c.add("svu")
@@ -114,9 +114,9 @@ def test_mapping_set_existing_key():
 
     print(c.config())
     
-    assert "Hostname\tssh.svuniversity.ac.in" in c.config()
-    assert "User\tmca" in c.config()
-    assert "ProxyCommand\tnc --help" in c.config()
+    assert "Hostname ssh.svuniversity.ac.in" in c.config()
+    assert "User mca" in c.config()
+    assert "ProxyCommand nc --help" in c.config()
 
 def test_mapping_set_new_key():
     c = sshconf.read_ssh_config(test_config)
@@ -125,18 +125,18 @@ def test_mapping_set_new_key():
 
     assert "Hostname   www.svuniversity.ac.in" in c.config()  # old parameters
     assert "Port       22" in c.config()
-    assert "ForwardAgent\tyes" in c.config()  # new parameter has been properly cased
-    assert "unknownpropertylikethis\tnoway" in c.config()
+    assert "ForwardAgent yes" in c.config()  # new parameter has been properly cased
+    assert "unknownpropertylikethis noway" in c.config()
 
 def test_mapping_add_new_keys():
     c = sshconf.read_ssh_config(test_config)
     c.add("svu-new", forwardAgent="yes", unknownpropertylikethis="noway", Hostname="ssh.svuni.local",
           user="mmccaa")
 
-    assert "Host\tsvu-new" in c.config()
-    assert "ForwardAgent\tyes" in c.config()
-    assert "unknownpropertylikethis\tnoway" in c.config()
-    assert "HostName\tssh.svuni.local" in c.config()
+    assert "Host svu-new" in c.config()
+    assert "ForwardAgent yes" in c.config()
+    assert "unknownpropertylikethis noway" in c.config()
+    assert "HostName ssh.svuni.local" in c.config()
 
     assert "forwardagent" in c.host("svu-new")
     assert "unknownpropertylikethis" in c.host("svu-new")

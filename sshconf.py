@@ -205,7 +205,7 @@ class SshConfig(object):
 
         def update_line(key, value):
             """Produce new config line"""
-            return "\t%s\t%s" % (key, value)
+            return "  %s %s" % (key, value)
 
         for key, values in kwargs.items():
             if type(values) not in [list, tuple]:  # pylint: disable=unidiomatic-typecheck
@@ -273,7 +273,7 @@ class SshConfig(object):
                 line.host = new_host
                 if line.key.lower() == "host":
                     line.value = new_host
-                    line.line = "Host\t%s" % new_host
+                    line.line = "Host %s" % new_host
         self.hosts_.remove(old_host)  # update host cache
         self.hosts_.add(new_host)
 
@@ -290,13 +290,13 @@ class SshConfig(object):
             raise ValueError("Host %s: exists (use update)." % host)
         self.hosts_.add(host)
         self.lines_.append(ConfigLine(line="", host=None))
-        self.lines_.append(ConfigLine(line="Host\t%s" % host, host=host, key="Host", value=host))
+        self.lines_.append(ConfigLine(line="Host %s" % host, host=host, key="Host", value=host))
         for k, v in kwargs.items():
             if type(v) not in [list, tuple]:
                 v = [v]
             mapped_k = _remap_key(k)
             for value in v:
-                self.lines_.append(ConfigLine(line="\t%s\t%s" % (mapped_k, str(value)), host=host, key=mapped_k, value=value))
+                self.lines_.append(ConfigLine(line="  %s %s" % (mapped_k, str(value)), host=host, key=mapped_k, value=value))
         self.lines_.append(ConfigLine(line="", host=None))
 
     def remove(self, host):
