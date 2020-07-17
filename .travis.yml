@@ -1,17 +1,28 @@
 language: python
 python:
-- '3.6'
+- '3.7'
 install:
+- pip install pytest pytest-cov codecov
 - pip install -e .
 script:
-- pytest
-deploy:
-- provider: pypi
-  distributions: sdist
-  server: https://upload.pypi.org/legacy/
-  user: sorenpypi
-  password:
-    secure: cAbHV7rzGMwD7wAgu+WkWLV5HsA9hqTKJJFeKp16aLcGzKryhEp6SBqRw4YndcRP4OljA6R+4Yr9OyfRL0PavtQVsIE+MoEDrGJa8ZtiQ++6VVSIohLPIKsyC+tMSmDPGBOnsxHZOb6kCgWqoYMqXWCrkhaDOADR6T0ZF/9x9IQOl1b/Q23UqWMGTcFoD14WO+b4YyaDVyUCf64oC6YeBcY2ijsWW6OEiep6+JKEhZUloKvSLIiwpEPWHwSFxG3wmbh0NhAEA5ORiGmpTtUgUM4ftyBq/uEe3cRKchMVk6IXnmegdrNoa2yHsrihhmr7pAz4DM7mvCJvSV17kvxUjKbJd5rcynPOxTLOauZ3ICtcq989c5CRrj5XZ4nSGTEtmVQZLVSfrygw6OLu+ek1sgop2bbwy88CIDdsXkxN2Vm1yT1cxqzsQxmMh7pzNoqUjq358WKkT7eIO0TNh9uhjvlVhzgTUbJZrxzPpP9hm4qdtKSjxPRv7dNXEhS241vcIDjRrwVWqwG5zhmRInZwYb0UwyrmEJNNyNyt2OO1xswbVmUWxPXS88IFgHgph5UZXj5++BJ8T8IbitQN+xO633J3lUv15qfSMJ3xKVx6sJUzsFfvRATYGjW8VIU8c/vq/kt5NBeQcqhxzB3sI2v32GPD9yGPgGtsul3BKh6eNU8=
-  on:
-    branch: master
-    tags: true
+- pytest tests
+after_success:
+- codecov
+stages:
+- test
+- deploy
+jobs:
+  include:
+    - stage: deploy
+      script: skip
+      after_success: true
+      deploy:
+      - provider: pypi
+        distributions: sdist
+        server: https://upload.pypi.org/legacy/
+        user: sorenpypi
+        password:
+          secure: cAbHV7rzGMwD7wAgu+WkWLV5HsA9hqTKJJFeKp16aLcGzKryhEp6SBqRw4YndcRP4OljA6R+4Yr9OyfRL0PavtQVsIE+MoEDrGJa8ZtiQ++6VVSIohLPIKsyC+tMSmDPGBOnsxHZOb6kCgWqoYMqXWCrkhaDOADR6T0ZF/9x9IQOl1b/Q23UqWMGTcFoD14WO+b4YyaDVyUCf64oC6YeBcY2ijsWW6OEiep6+JKEhZUloKvSLIiwpEPWHwSFxG3wmbh0NhAEA5ORiGmpTtUgUM4ftyBq/uEe3cRKchMVk6IXnmegdrNoa2yHsrihhmr7pAz4DM7mvCJvSV17kvxUjKbJd5rcynPOxTLOauZ3ICtcq989c5CRrj5XZ4nSGTEtmVQZLVSfrygw6OLu+ek1sgop2bbwy88CIDdsXkxN2Vm1yT1cxqzsQxmMh7pzNoqUjq358WKkT7eIO0TNh9uhjvlVhzgTUbJZrxzPpP9hm4qdtKSjxPRv7dNXEhS241vcIDjRrwVWqwG5zhmRInZwYb0UwyrmEJNNyNyt2OO1xswbVmUWxPXS88IFgHgph5UZXj5++BJ8T8IbitQN+xO633J3lUv15qfSMJ3xKVx6sJUzsFfvRATYGjW8VIU8c/vq/kt5NBeQcqhxzB3sI2v32GPD9yGPgGtsul3BKh6eNU8=
+        on:
+          branch: master
+          tags: true
