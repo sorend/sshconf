@@ -1,10 +1,12 @@
 ﻿from __future__ import print_function
 import sshconf
 import pytest
+import shutil
 import os
 
 test_config = os.path.join(os.path.dirname(__file__), "test_config")
 test_config2 = os.path.join(os.path.dirname(__file__), "test_config2")
+test_config_include_specific = os.path.join(os.path.dirname(__file__), "test_config_include_specific")
 
 def test_parsing():
     c = sshconf.read_ssh_config(test_config)
@@ -99,7 +101,7 @@ def test_empty():
     import tempfile
     tc = os.path.join(tempfile.gettempdir(), "temp_ssh_config-123")
     try:
-        c = sshconf.empty_ssh_config()
+        c = sshconf.empty_ssh_config_file()
         c.add("svu33", HostName="ssh33.svu.local", User="mca", Port=22)
         c.write(tc)
         c2 = sshconf.read_ssh_config(tc)
@@ -211,3 +213,17 @@ def test_mapping_remove_existing_key():
     assert 'proxycommand' not in svu2
     assert 'hostname' in svu2
     assert 'port' in svu2
+
+
+def test_read_included_specific():
+    c = sshconf.read_ssh_config(test_config_include_specific)
+
+    hosts = c.hosts()
+    print("hosts", hosts)
+
+    assert 'svuincluded' in hosts
+    
+    h = c.host("svuincluded")
+    print(h)
+    print(c.config())
+

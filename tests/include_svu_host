@@ -1,0 +1,6 @@
+# comment 2
+Host svuincluded
+     Hostname   www.svuniversity.ac.in
+     # within-host-comment
+     Port       22
+     ProxyCommand       nc -w 300 -x localhost:9050 %h %p

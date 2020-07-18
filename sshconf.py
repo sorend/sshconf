@@ -1,4 +1,5 @@
 
+import os
 import re
 from collections import defaultdict, namedtuple
 
@@ -109,19 +110,22 @@ class ConfigLine:  # pylint: disable=too-few-public-methods
         self.key = key
         self.value = value
 
-def read_ssh_config(path):
+    def __repr__(self):
+        return "'%s' host=%s key=%s value=%s" % (self.line, self.host, self.key, self.value)
+
+def read_ssh_config_file(path):
     """
-    Read ssh config file and return parsed SshConfig
+    Read ssh config file and return parsed SshConfigFile
     """
     with open(path, "r") as fh_:
         lines = fh_.read().splitlines()
-    return SshConfig(lines)
+    return SshConfigFile(lines)
 
-def empty_ssh_config():
+def empty_ssh_config_file():
     """
     Creates a new empty ssh configuration.
     """
-    return SshConfig([])
+    return SshConfigFile([])
 
 def _key_value(line):
     no_comment = line.split("#")[0]
@@ -135,7 +139,7 @@ def _remap_key(key):
         return KNOWN_PARAMS[known_params.index(key.lower())]
     return key
 
-class SshConfig(object):
+class SshConfigFile(object):
     """
     Class for manipulating SSH configuration.
     """
@@ -332,3 +336,153 @@ class SshConfig(object):
         """
         with open(path, "w") as fh_:
             fh_.write(self.config())
+
+
+def read_ssh_config(master_path):
+    """Read SSH config from master file and process include directives"""
+    master_config = read_ssh_config_file(master_path)
+    configs = []
+    queue = [(master_path, master_config)]
+    while len(queue) > 0:
+        cur_path, cur_config = queue.pop()
+        cur_includes = [ x for x in cur_config.lines_ if x.key is not None and x.key.lower() == "include" ]
+        configs.append((cur_path, cur_config))
+        for cur_include in cur_includes:
+            new_path = os.path.join(os.path.dirname(master_path), cur_include.value)
+            new_config = read_ssh_config_file(new_path)
+            queue.append((new_path, new_config))
+
+    return SshConfig(configs)
+
+class SshConfig(object):
+    """Class for manipulating set of ssh config files"""
+    def __init__(self, configs):
+        self.configs_ = configs
+
+    def hosts(self):
+        """
+        Return the hosts found in the configuration.
+
+        Returns
+        -------
+        Tuple of Host entries (including "*" if found)
+        """
+        hosts = set()
+        for p, c in self.configs_:
+            hosts.update(c.hosts())
+        return tuple(hosts)
+
+    def host(self, host):
+        """
+        Return the configuration of a specific host as a dictionary.
+
+        Dictionary always contains lowercase versions of the attribute names.
+
+        Parameters
+        ----------
+        host : the host to return values for.
+
+        Returns
+        -------
+        dict of key value pairs, excluding "Host", empty map if host is not found.
+        """
+        for p, c in self.configs_:
+            if host in c.hosts_:
+                return c.host(host)
+        return {}
+    
+    def set(self, host, **kwargs):
+        """
+        Set configuration values for an existing host.
+        Overwrites values for existing settings, or adds new settings.
+
+        Parameters
+        ----------
+        host : the Host to modify.
+        **kwargs : The new configuration parameters
+        """
+        for p, c in self.configs_:
+            if host in c.hosts_:
+                c.set(host, **kwargs)
+                return
+        raise ValueError("Host %s: not found" % host)
+    
+    def unset(self, host, *args):
+        """
+        Removes settings for a host.
+
+        Parameters
+        ----------
+        host : the host to remove settings from.
+        *args : list of settings to removes.
+        """
+        for p, c in self.configs_:
+            if host in c.hosts_:
+                c.unset(host, *args)
+                return
+        raise ValueError("Host %s: not found" % host)
+
+    def rename(self, old_host, new_host):
+        """
+        Renames a host configuration.
+
+        Parameters
+        ----------
+        old_host : the host to rename.
+        new_host : the new host value
+        """
+        if new_host in self.hosts():
+            raise ValueError("Host %s: already exists." % new_host)
+        for p, c in self.configs_:
+            if old_host in c.hosts_:
+                c.rename(old_host, new_host)
+
+    def add(self, host, **kwargs):
+        """
+        Add another host to the SSH configuration.
+
+        Parameters
+        ----------
+        host: The Host entry to add.
+        **kwargs: The parameters for the host (without "Host" parameter itself)
+        """
+        self.configs_[0][1].add(host, **kwargs)
+
+    def remove(self, host):
+        """
+        Removes a host from the SSH configuration.
+
+        Parameters
+        ----------
+        host : The host to remove
+        """
+        for p, c in self.configs_:
+            if host in c.hosts_:
+                c.remove(host)
+                return
+        raise ValueError("Host %s: not found" % host)
+
+
+    def config(self):
+        """
+        Return the configuration as a string.
+        """
+        return "\n".join([ c.config() for p, c in self.configs_ ])
+
+    def write(self, path):
+        """
+        Write configuration to a new files
+
+        Parameters
+        ----------
+        path : The file to write to
+        """
+        with open(path, "w") as fh_:
+            fh_.write(self.config())
+    
+    def save(self):
+        """
+        Saves (updated) ssh configuration
+        """
+        for p, c in self.configs_:
+            c.write(p)
