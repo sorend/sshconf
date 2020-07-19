@@ -56,6 +56,10 @@ Below is some example use:
     c2.remove("svu")  # remove
 
 
+A few things to note:
+- `save()` overwrites the files you read from.
+- `write()` writes a new config file. If you used `Include` in the read configuration, output will contain everything in one file.
+- indent for new lines is auto-probed from existing config lines, and defaults to two spaces.
 
 
 About
