@@ -1,7 +1,8 @@
 
 import os
 import re
-from collections import defaultdict, namedtuple
+import glob
+from collections import defaultdict, namedtuple, Counter
 
 # taken from "man ssh"
 KNOWN_PARAMS = (
@@ -128,8 +129,8 @@ def empty_ssh_config_file():
     return SshConfigFile([])
 
 def _key_value(line):
-    no_comment = line.split("#")[0]
-    return [x.strip() for x in re.split(r"\s+", no_comment.strip(), 1)]
+    upto_comment = line.split("#")[0]
+    return [x.strip() for x in re.split(r"\s+", upto_comment.strip(), 1)]
 
 def _remap_key(key):
     """ Change key into correct casing if we know the parameter """
@@ -138,6 +139,9 @@ def _remap_key(key):
     if key.lower() in known_params:
         return KNOWN_PARAMS[known_params.index(key.lower())]
     return key
+
+def _indent(s):
+    return s[0: len(s) - len(s.lstrip())]
 
 class SshConfigFile(object):
     """
@@ -151,6 +155,7 @@ class SshConfigFile(object):
     def parse(self, lines):
         """Parse lines from ssh config file"""
         cur_entry = None
+        indents = []
         for line in lines:
             kv_ = _key_value(line)
             if len(kv_) > 1:
@@ -158,9 +163,16 @@ class SshConfigFile(object):
                 if key.lower() == "host":
                     cur_entry = value
                     self.hosts_.add(value)
+                else:
+                    indents.append(_indent(line))
                 self.lines_.append(ConfigLine(line=line, host=cur_entry, key=key, value=value))
             else:
                 self.lines_.append(ConfigLine(line=line))
+        # use most popular indent as indent for file, default '  '
+        counter = Counter(indents)
+        popular = list(reversed(sorted(counter.items(), key=lambda e: e[1])))
+        self.indent = popular[0][0] if len(popular) > 0 else '  '
+        
 
     def hosts(self):
         """
@@ -207,10 +219,6 @@ class SshConfigFile(object):
         """
         self.__check_host_args(host, kwargs)
 
-        def update_line(key, value):
-            """Produce new config line"""
-            return "  %s %s" % (key, value)
-
         for key, values in kwargs.items():
             if type(values) not in [list, tuple]:  # pylint: disable=unidiomatic-typecheck
                 values = [values]
@@ -222,7 +230,7 @@ class SshConfigFile(object):
             for idx in update_idx:
                 if values:  # values available, update the line
                     value = values.pop()
-                    self.lines_[idx].line = update_line(self.lines_[idx].key, value)
+                    self.lines_[idx].line = self._new_line(self.lines_[idx].key, value)
                     self.lines_[idx].value = value
                 else:                # no more values available, remove the line
                     extra_remove.append(idx)
@@ -234,7 +242,7 @@ class SshConfigFile(object):
                 mapped_key = _remap_key(key)
                 max_idx = max([idx for idx, line in enumerate(self.lines_) if line.host == host])
                 for value in values:
-                    self.lines_.insert(max_idx + 1, ConfigLine(line=update_line(mapped_key, value),
+                    self.lines_.insert(max_idx + 1, ConfigLine(line=self._new_line(mapped_key, value),
                                                                host=host, key=mapped_key,
                                                                value=value))
 
@@ -300,7 +308,8 @@ class SshConfigFile(object):
                 v = [v]
             mapped_k = _remap_key(k)
             for value in v:
-                self.lines_.append(ConfigLine(line="  %s %s" % (mapped_k, str(value)), host=host, key=mapped_k, value=value))
+                new_line = self._new_line(mapped_k, value)
+                self.lines_.append(ConfigLine(line=new_line, host=host, key=mapped_k, value=value))
         self.lines_.append(ConfigLine(line="", host=None))
 
     def remove(self, host):
@@ -320,11 +329,17 @@ class SshConfigFile(object):
         for idx in remove_range:
             del self.lines_[idx]
 
-    def config(self):
+    def config(self, filter_includes=False):
         """
         Return the configuration as a string.
         """
-        return "\n".join([x.line for x in self.lines_])
+        def the_filter(k):
+            if filter_includes and k is not None and k.lower() == "include":
+                return False
+            else:
+                return True
+            
+        return "\n".join([x.line for x in self.lines_ if the_filter(x.key)])
 
     def write(self, path):
         """
@@ -337,20 +352,29 @@ class SshConfigFile(object):
         with open(path, "w") as fh_:
             fh_.write(self.config())
 
+    def _new_line(self, key, value):
+        return "%s%s %s" % (self.indent, key, str(value))
+
+
+def _resolve_includes(base_path, path):
+    search_path = os.path.join(base_path, path)
+    return glob.glob(search_path)
+
 
 def read_ssh_config(master_path):
     """Read SSH config from master file and process include directives"""
+    base_path = os.path.dirname(master_path)
     master_config = read_ssh_config_file(master_path)
     configs = []
     queue = [(master_path, master_config)]
     while len(queue) > 0:
         cur_path, cur_config = queue.pop()
-        cur_includes = [ x for x in cur_config.lines_ if x.key is not None and x.key.lower() == "include" ]
+        cur_includes = [ x.value for x in cur_config.lines_ if x.key is not None and x.key.lower() == "include" ]
         configs.append((cur_path, cur_config))
         for cur_include in cur_includes:
-            new_path = os.path.join(os.path.dirname(master_path), cur_include.value)
-            new_config = read_ssh_config_file(new_path)
-            queue.append((new_path, new_config))
+            for new_path in _resolve_includes(base_path, cur_include):
+                new_config = read_ssh_config_file(new_path)
+                queue.append((new_path, new_config))
 
     return SshConfig(configs)
 
@@ -465,9 +489,9 @@ class SshConfig(object):
 
     def config(self):
         """
-        Return the configuration as a string.
+        Return the configuration as a string (without includes).
         """
-        return "\n".join([ c.config() for p, c in self.configs_ ])
+        return "\n".join([ c.config(True) for p, c in self.configs_ ])
 
     def write(self, path):
         """

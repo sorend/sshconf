@@ -227,3 +227,67 @@ def test_read_included_specific():
     print(h)
     print(c.config())
 
+def test_save_with_included(tmpdir):
+    conf = tmpdir.join("config")
+    incl = tmpdir.join("included_host")
+
+    conf.write("""
+Host svu.local
+    Hostname ssh.svu.local
+    User something
+
+Include included_host
+    """)
+
+    incl.write("""
+Host svu.included
+    Hostname ssh.svu.included
+    User whatever
+    """)
+    
+    c = sshconf.read_ssh_config(conf)
+
+    hosts = c.hosts()
+    print("hosts", hosts)
+
+    assert 'svu.local' in hosts
+    assert 'svu.included' in hosts
+    
+    h = c.host("svu.included")
+    print(h)
+
+    c.set("svu.included", Hostname="ssh2.svu.included", Port="1234")
+    h = c.host("svu.included")
+    print(h)
+    print(c.config())
+
+    c.save()
+    assert "ssh2.svu.included" not in conf.read()
+    assert "ssh2.svu.included" in incl.read()
+
+    
+def test_read_included_glob(tmpdir):
+    conf = tmpdir.join("config")
+    incl = tmpdir.mkdir("conf.d").join("included_host")
+
+    conf.write("""
+Host svu.local
+    Hostname ssh.svu.local
+    User something
+
+Include conf.d/*
+    """)
+
+    incl.write("""
+Host svu.included
+    Hostname ssh.svu.included
+    User whatever
+    """)
+
+    c = sshconf.read_ssh_config(conf)
+
+    hosts = c.hosts()
+    print("hosts", hosts)
+
+    assert 'svu.local' in hosts
+    assert 'svu.included' in hosts

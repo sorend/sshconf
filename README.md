@@ -42,14 +42,20 @@ Below is some example use:
     c.rename("newsvu", "svu-new")
     print("svu-new", c.host("svu-new"))
 
-    c.write(expanduser("~/.ssh/newconfig"))  # write to new file
+    # overwrite existing file(s)
+    c.save()
+
+    # write all to a new file
+    c.write(expanduser("~/.ssh/newconfig"))
 
     # creating a new config file.
-    c2 = empty_ssh_config()
+    c2 = empty_ssh_config_file()
     c2.add("svu", Hostname="ssh.svu.local", User="teachmca", Port=22)
     c2.write("newconfig")
 
     c2.remove("svu")  # remove
+
+
 
 
 About
