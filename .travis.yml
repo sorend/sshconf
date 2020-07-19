@@ -1,21 +1,25 @@
 language: python
+
 python:
 - '3.8'
+
 install:
 - pip install pytest pytest-cov codecov
 - pip install -e .
+
 script:
 - pytest tests
+
 after_success:
 - codecov
+
 stages:
 - test
 - deploy
+
 jobs:
   include:
     - stage: deploy
-      script: skip
-      after_success: true
       deploy:
       - provider: pypi
         distributions: sdist
