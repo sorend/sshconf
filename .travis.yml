@@ -37,3 +37,11 @@ jobs:
         on:
           branch: master
           tags: true
+      - provider: pypi
+        distributions: sdist bdist_wheel
+        server: https://test.pypi.org/legacy/
+        user: sorend
+        password:
+          secure: "JEG0A4F0oGOTCMnTPq1M58qf5VRUx5NAHcF7D+tHRsmFz2/u7/e9Juu9xv99tZUh5sTU3em4MXv+Ut5u/HKBE/EUocIUH5DaJi0AcuwRzn761Z3M3LJWXMlkGplXd51Xhj6hlokA+0MvhC9YccHT3QadhVpGyeFtVMSUV6ey7bH64OVAO09UZ69KKhjS6TVXxPVedH5+sUmlzr4y9FVAMOLQWTQr9FwNB+cCyexrIGlmodQ0WXmaMkkiFnCHHE5f07gzouHyPn4mdH7fi4D7rxj5nLlX34taioMHWjh/DmaqUNp/24u7T7IBp/tWqmdtRPtOD2MXHAbe1uI7EgmolVlrn9yxq7jy3GPJk4zXoCn69C7JiVaY9BnAIQWLVYUfUeOKTRZP4kFz58UPpZrvEucLpmGfhGYNPSv14HqV5lrlFS8l1zZ2zO+3NhWVwfgJ+n2dLLAdtUpwMOkApMPe7+vhKiUUtDCyFA59Vkjs+PIXPFmIk8wvOEPaJ8ooQclR6dtIspKWWMoGmPMM9ebhBKYOSRiBObSUST+23Xadf1h0YcLANGfDkKUrMVWHsaeotmvpyREg0+y+lrNGu4eWWeYzD7PyZ++r2FlySysm3/oMPF0AWsqTPZq7XI+j+BxpFboYGrNTgO+/VSWO8Ge9akHjF2K4zbKh0k+HrxGdxcg="
+        on:
+          all_branches: true
