@@ -8,7 +8,7 @@ env:
     secure: "to6zJPXfMQ7/AHrvhNw1X0s8hrCELVp5pZ/Wnm3FmDq9m0uUySKC4rL/qv9Lo+dpeX7Ca7QyOTIaPDssLPD1MZTOA89d5CYkkuUwX/BO+y1IoCx1XbpWLoEapP8KxFYcTjol0xENVhK0E7Oy0pnpJeI9EIK/iFSmDwBjOqGbCy+s44gwx/tqIvZaNasoqzf8WmA6A7vorpwdOIvZOD6Tu6MqtseyWg3ITYA2JELx2XEOI1x+v8XOkUOLAXHZHfKKMoRZkjjSMc9U8G3E6i5+wtpCeSIKq7Ba63p6iKcHKq+/khcqozQ4EqqBDMdA177J3xg23Lr4EApcstKLykfL2nPVWqkQxvaE3hKwLqWkI9Gh0/Yho5WXNvqrFG0OtV5UJS+Jp3U0YrBGW34GIoPedJU/rxT7eyLcx47e/1BLwIN0euW8mnbOinTtPvMHHAXcEIJn8mXWbr62GwqGqqNJHbesCEY0cM+4ZP+lfKFeLT6DIqZkbFCgRj/zTV9yrUduAsJdJJtvVAfU1u7OQah/CzPCPcdksXqfNTvJiL4MM1+jQ4XXZVsNF7j4jOvdjQBKxdas/vudfXGvg7DzQT/1gWAtu/Qak/PISr72t/BkKwtM0E3oHY6ioPIVa6KZ5nzU2C0TN9wPc0Mg1vUBs7MBzDmuDZZ2dinG9A/vsCABZmE="
 
 before_install:
-- apt-get install pandoc
+- sudo apt-get install pandoc
 
 install:
 - pip install pytest pytest-cov codecov
