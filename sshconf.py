@@ -352,6 +352,10 @@ class SshConfigFile(object):
         with open(path, "w") as fh_:
             fh_.write(self.config())
 
+    def add_raw(self, line, host=None, key=None, value=None):
+        """Adds a line to configuration"""
+        self.lines_.append(ConfigLine(line=line, host=host, key=key, value=value))
+            
     def _new_line(self, key, value):
         return "%s%s %s" % (self.indent, key, str(value))
 
@@ -376,12 +380,14 @@ def read_ssh_config(master_path):
                 new_config = read_ssh_config_file(new_path)
                 queue.append((new_path, new_config))
 
-    return SshConfig(configs)
+    return SshConfig(base_path, configs)
 
 class SshConfig(object):
     """Class for manipulating set of ssh config files"""
-    def __init__(self, configs):
+    def __init__(self, base_path, configs):
+        self.base_path_ = base_path
         self.configs_ = configs
+        self.base_config_ = configs[0][1]
 
     def hosts(self):
         """
@@ -470,7 +476,7 @@ class SshConfig(object):
         host: The Host entry to add.
         **kwargs: The parameters for the host (without "Host" parameter itself)
         """
-        self.configs_[0][1].add(host, **kwargs)
+        self.base_config_.add(host, **kwargs)
 
     def remove(self, host):
         """
@@ -486,6 +492,25 @@ class SshConfig(object):
                 return
         raise ValueError("Host %s: not found" % host)
 
+
+    def add_include(self, path, config):
+        """
+        Creates a new Include in the main configuration.
+
+        Parameters
+        ----------
+        path : the path where the new config file is notfound
+
+        config : the new config
+        """
+        if not isinstance(config, SshConfigFile):
+            raise ValueError("config must be a SshConfigFile, see emtpy_ssh_config_file")
+        path = os.path.relpath(os.path.join(self.base_path_, path), self.base_path_)  # adjust for base_path
+        if path in [ p for p, c in self.configs_ ]:
+            raise ValueError("%s: already part of configuration" % path)
+        self.configs_.append((path, config))
+        self.base_config_.add_raw(line="Include %s" % path, key="Include", value=path)
+        
 
     def config(self):
         """

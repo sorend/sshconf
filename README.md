@@ -21,47 +21,59 @@ Install through pip is the most easy way. You can install from the Git source di
 
     pip install sshconf
 
-
-Below is some example use:
+### Reading and writing
 
     from __future__ import print_function
-    from sshconf import read_ssh_config, empty_ssh_config
+    from sshconf import read_ssh_config, empty_ssh_config_file
     from os.path import expanduser
 
+    # read the user ssh config file and print hosts
     c = read_ssh_config(expanduser("~/.ssh/config"))
-    print("hosts", c.hosts())
 
-    # assuming you have a host "svu"
-    print("svu host", c.host("svu"))  # print the settings
-    c.set("svu", Hostname="ssh.svu.local", Port=1234)
-    print("svu host now", c.host("svu"))
-    c.unset("svu", "port")
-    print("svu host now", c.host("svu"))
-
-    c.add("newsvu", Hostname="ssh-new.svu.local", Port=22, User="stud1234")
-    print("newsvu", c.host("newsvu"))
-
-    c.rename("newsvu", "svu-new")
-    print("svu-new", c.host("svu-new"))
-
-    # overwrite existing file(s)
+    # save it again
     c.save()
 
-    # write all to a new file
-    c.write(expanduser("~/.ssh/newconfig"))
+    # write it to a new file
+    c.write(expanduser("~/.ssh/new-config"))
 
-    # creating a new config file.
-    c2 = empty_ssh_config_file()
-    c2.add("svu", Hostname="ssh.svu.local", User="teachmca", Port=22)
-    c2.write("newconfig")
+### Working with hosts
 
-    c2.remove("svu")  # remove
+    # add a host
+    c.add("svu", Hostname="ssh.svu.local", Port=22, User="shakti")
+    print("svu", c.host("svu"))
 
+    # update a host
+    c.set("svu", Port=1234, ProxyJump="gateway.cs.svu-ac.in")
+    print("svu", c.host("svu"))
 
-A few things to note:
-- `save()` overwrites the files you read from.
-- `write()` writes a new config file. If you used `Include` in the read configuration, output will contain everything in one file.
-- indent for new lines is auto-probed from existing config lines, and defaults to two spaces.
+    # remove a setting from a host
+    c.unset("svu", "ProxyJump")
+    print("svu", c.host("svu"))
+
+    # rename a host
+    c.rename("svu", "svu-server")
+    print("svu-server", c.host("svu-server"))
+
+    # list all hosts
+    all_hosts = c.hosts()
+    print("hosts", all_hosts)
+
+    # remove a host
+    c.remove("svu-server")
+    print("has svu-server?", "svu-server" in c.hosts())
+
+### Working with includes
+
+    # add a new include
+    i = empty_ssh_config_file()
+    i.add("svu-jumper", Hostname="venkatadri.cs.svu-ac.in", Port=2222, User="mcalogin")
+    c.add_include("jumpers", i)
+
+    # get the config as string
+    print(c.config())
+
+    # save it all
+    c.save()
 
 
 About

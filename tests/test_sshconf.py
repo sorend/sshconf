@@ -291,3 +291,40 @@ Host svu.included
 
     assert 'svu.local' in hosts
     assert 'svu.included' in hosts
+
+
+def test_add_include(tmpdir):
+    conf = tmpdir.join("config")
+    incl = tmpdir.mkdir("conf.d").join("included_host")
+
+    conf.write("""
+Host svu.local
+    Hostname ssh.svu.local
+    User something
+
+    """)
+
+    c = sshconf.read_ssh_config(conf)
+    assert 'svu.local' in c.hosts()
+
+    extra = sshconf.empty_ssh_config_file()
+    extra.add("svu.included", Hostname="ssh.svu.included", User="whatever", Port=2222, ProxyJump="gateway.cs.svu-ac.in")
+    c.add_include(incl, extra)
+
+    assert 'svu.local' in c.hosts()
+    assert 'svu.included' in c.hosts()
+    c.save()
+
+    # read it and check both hosts are there
+    c2 = sshconf.read_ssh_config(conf)
+    assert 'svu.included' in c2.hosts()
+    assert 'svu.local' in c2.hosts()
+
+    # read files one by one and check they look properly
+    c3 = sshconf.read_ssh_config_file(conf)
+    assert 'svu.local' in c3.hosts()
+    assert 'svu.included' not in c3.hosts()
+
+    c4 = sshconf.read_ssh_config_file(incl)
+    assert 'svu.local' not in c4.hosts()
+    assert 'svu.included' in c4.hosts()
