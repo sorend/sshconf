@@ -8,7 +8,7 @@ from os.path import expanduser
 c = read_ssh_config(expanduser("~/.ssh/config"))
 
 # save it again
-c.save()
+# c.save()
 
 # write it to a new file
 c.write(expanduser("~/.ssh/new-config"))
@@ -41,10 +41,10 @@ print("has svu-server?", "svu-server" in c.hosts())
 # add a new include
 i = empty_ssh_config_file()
 i.add("svu-jumper", Hostname="venkatadri.cs.svu-ac.in", Port=2222, User="mcalogin")
-c.add_include("jumpers", i)
+# c.add_include("jumpers", i)
 
 # get the config as string
 print(c.config())
 
 # save it all
-c.save()
+# c.save()

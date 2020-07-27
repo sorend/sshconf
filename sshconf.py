@@ -101,36 +101,90 @@ KNOWN_PARAMS = (
     "XAuthLocation"
 )
 
+DEFAULT_INDENT = '  '
+
 known_params = [x.lower() for x in KNOWN_PARAMS]  # pylint: disable=invalid-name
 
 class ConfigLine:  # pylint: disable=too-few-public-methods
     """ Holds configuration for a line in ssh config """
-    def __init__(self, line, host=None, key=None, value=None):
+    def __init__(self, path, line, key=None, value=None, ref=None):
+        self.path = path
         self.line = line
-        self.host = host
         self.key = key
         self.value = value
+        self.ref = ref
+        # derivatives
+        self.lower_key = key.lower() if key is not None else None
+
+    def is_host(self, host):
+        return isinstance(self.ref, Host) and self.ref.name == host
 
     def __repr__(self):
-        return "'%s' host=%s key=%s value=%s" % (self.line, self.host, self.key, self.value)
+        return "path=%s, ref=%s, key=%s, value=%s | %s" % (self.path, self.ref, self.key, self.value, self.line)
 
-def read_ssh_config_file(path):
-    """
-    Read ssh config file and return parsed SshConfigFile
-    """
-    with open(path, "r") as fh_:
-        lines = fh_.read().splitlines()
-    return SshConfigFile(lines)
+class Host:
+    def __init__(self, name):
+        self.name = name
+    def __repr__(self):
+        return self.name
+
+class Match:
+    def __init__(self, name):
+        self.name = name
+
+def _read_lines(path):
+    with open(path, "r") as fh:
+        return fh.read().splitlines()
+
+def _line_split_key_value(line):
+    upto_comment = line.split("#")[0]
+    kv = [x.strip() for x in re.split(r"\s+", upto_comment.strip(), 1)]
+    return kv if len(kv) == 2 else None
+
+def _parse_configline(path, cur_entry, line, level0=True):
+    kv = _line_split_key_value(line)
+    if kv is None:
+        return cur_entry, ConfigLine(path=path, line=line, ref=cur_entry)
+    else:
+        key, value = kv
+        if level0 and key.lower() == "host":
+            cur_entry = Host(value)
+        elif level0 and key.lower() == "match":
+            cur_entry = Match(value)
+        return cur_entry, ConfigLine(path=path, line=line, key=key, value=value, ref=cur_entry)
+
+def _parse_with_includes(parsed_lines, cur_entry, base_path, path, level0):
+    """Parse lines from ssh config file"""
+    for line in _read_lines(path):
+        cur_entry, cl = _parse_configline(path, cur_entry, line, level0)
+        parsed_lines.append(cl)
+        if cl.lower_key == "include":
+            include_paths = _resolve_includes(base_path, cl.value)
+            for include_path in include_paths:
+                _parse_with_includes(parsed_lines, cur_entry, base_path, include_path, cur_entry is None)
+
+def read_ssh_config(path):
+    base_path = os.path.dirname(path)
+    parsed_lines = []
+    _parse_with_includes(parsed_lines, None, base_path, path, True)
+
+    # use most popular indent as indent for file, default '  '
+    indents = [ _line_indent(x.line) for x in parsed_lines
+                if x.ref is not None and x.lower_key is not None and x.lower_key not in ["host", "match"] ]
+    counter = Counter(indents)
+    popular = list(reversed(sorted(counter.items(), key=lambda e: e[1])))
+    indent = popular[0][0] if len(popular) > 0 else DEFAULT_INDENT
+
+    # initialize hosts
+    hosts = set([ x.ref.name for x in parsed_lines if isinstance(x.ref, Host) ])
+
+    return SshConfig(path, parsed_lines, indent)
 
 def empty_ssh_config_file():
     """
     Creates a new empty ssh configuration.
     """
-    return SshConfigFile([])
-
-def _key_value(line):
-    upto_comment = line.split("#")[0]
-    return [x.strip() for x in re.split(r"\s+", upto_comment.strip(), 1)]
+    return SshConfig(None, [], DEFAULT_INDENT)
 
 def _remap_key(key):
     """ Change key into correct casing if we know the parameter """
@@ -140,39 +194,17 @@ def _remap_key(key):
         return KNOWN_PARAMS[known_params.index(key.lower())]
     return key
 
-def _indent(s):
+def _line_indent(s):
     return s[0: len(s) - len(s.lstrip())]
 
-class SshConfigFile(object):
+class SshConfig(object):
     """
     Class for manipulating SSH configuration.
     """
-    def __init__(self, lines):
-        self.lines_ = []
-        self.hosts_ = set()
-        self.parse(lines)
-
-    def parse(self, lines):
-        """Parse lines from ssh config file"""
-        cur_entry = None
-        indents = []
-        for line in lines:
-            kv_ = _key_value(line)
-            if len(kv_) > 1:
-                key, value = kv_
-                if key.lower() == "host":
-                    cur_entry = value
-                    self.hosts_.add(value)
-                else:
-                    indents.append(_indent(line))
-                self.lines_.append(ConfigLine(line=line, host=cur_entry, key=key, value=value))
-            else:
-                self.lines_.append(ConfigLine(line=line))
-        # use most popular indent as indent for file, default '  '
-        counter = Counter(indents)
-        popular = list(reversed(sorted(counter.items(), key=lambda e: e[1])))
-        self.indent = popular[0][0] if len(popular) > 0 else '  '
-        
+    def __init__(self, root_path, parsed_lines, indent):
+        self.root_path_ = root_path
+        self.lines_ = parsed_lines
+        self.indent_ = indent
 
     def hosts(self):
         """
@@ -182,7 +214,7 @@ class SshConfigFile(object):
         -------
         Tuple of Host entries (including "*" if found)
         """
-        return tuple(self.hosts_)
+        return tuple(set([ x.ref.name for x in self.lines_ if isinstance(x.ref, Host)]))
 
     def host(self, host):
         """
@@ -198,10 +230,9 @@ class SshConfigFile(object):
         -------
         dict of key value pairs, excluding "Host", empty map if host is not found.
         """
-        if host in self.hosts_:
+        if host in self.hosts():
             vals = defaultdict(list)
-            for k, value in [(x.key.lower(), x.value) for x in self.lines_
-                             if x.host == host and x.key.lower() != "host"]:
+            for k, value in [(x.lower_key, x.value) for x in self.lines_ if x.is_host(host) and x.key is not None and x.lower_key != "host"  ]:
                 vals[k].append(value)
             flatten = lambda x: x[0] if len(x) == 1 else x
             return {k: flatten(v) for k, v in vals.items()}
@@ -225,7 +256,7 @@ class SshConfigFile(object):
 
             lower_key = key.lower()
             update_idx = [idx for idx, x in enumerate(self.lines_)
-                          if x.host == host and x.key.lower() == lower_key]
+                          if x.is_host(host) and x.lower_key == lower_key]
             extra_remove = []
             for idx in update_idx:
                 if values:  # values available, update the line
@@ -240,11 +271,14 @@ class SshConfigFile(object):
 
             if values:
                 mapped_key = _remap_key(key)
-                max_idx = max([idx for idx, line in enumerate(self.lines_) if line.host == host])
+                insert_idx = min([ idx for idx, line in enumerate(self.lines_) if line.is_host(host) and line.lower_key == "host" ])
+                insert_line = self.lines_[insert_idx]
                 for value in values:
-                    self.lines_.insert(max_idx + 1, ConfigLine(line=self._new_line(mapped_key, value),
-                                                               host=host, key=mapped_key,
-                                                               value=value))
+                    self.lines_.insert(insert_idx + 1, ConfigLine(path=insert_line.path,
+                                                                  line=self._new_line(mapped_key, value),
+                                                                  ref=Host(host),
+                                                                  key=mapped_key,
+                                                                  value=value))
 
     def unset(self, host, *args):
         """
@@ -255,17 +289,17 @@ class SshConfigFile(object):
         host : the host to remove settings from.
         *args : list of settings to removes.
         """
+        args = [ x.lower() for x in args ]
         self.__check_host_args(host, args)
         remove_idx = [idx for idx, x in enumerate(self.lines_)
-                      if x.host == host and x.key.lower() in args]
+                      if x.is_host(host) and x.lower_key in args]
         for idx in reversed(sorted(remove_idx)):
             del self.lines_[idx]
 
     def __check_host_args(self, host, keys):
         """Checks parameters"""
-        if host not in self.hosts_:
+        if host not in self.hosts():
             raise ValueError("Host %s: not found" % host)
-
         if "host" in [x.lower() for x in keys]:
             raise ValueError("Cannot modify Host value")
 
@@ -278,16 +312,15 @@ class SshConfigFile(object):
         old_host : the host to rename.
         new_host : the new host value
         """
-        if new_host in self.hosts_:
+        if new_host in self.hosts():
             raise ValueError("Host %s: already exists." % new_host)
+        new_host_ref = Host(new_host)
         for line in self.lines_:  # update lines
-            if line.host == old_host:
-                line.host = new_host
-                if line.key.lower() == "host":
+            if line.is_host(old_host):
+                line.ref = new_host_ref
+                if line.lower_key == "host":
                     line.value = new_host
                     line.line = "Host %s" % new_host
-        self.hosts_.remove(old_host)  # update host cache
-        self.hosts_.add(new_host)
 
     def add(self, host, **kwargs):
         """
@@ -298,19 +331,19 @@ class SshConfigFile(object):
         host: The Host entry to add.
         **kwargs: The parameters for the host (without "Host" parameter itself)
         """
-        if host in self.hosts_:
+        if host in self.hosts():
             raise ValueError("Host %s: exists (use update)." % host)
-        self.hosts_.add(host)
-        self.lines_.append(ConfigLine(line="", host=None))
-        self.lines_.append(ConfigLine(line="Host %s" % host, host=host, key="Host", value=host))
+        new_host_ref = Host(host)
+        self.lines_.append(ConfigLine(path=self.root_path_, line="", ref=new_host_ref))
+        self.lines_.append(ConfigLine(path=self.root_path_, line="Host %s" % host, ref=new_host_ref, key="Host", value=host))
         for k, v in kwargs.items():
             if type(v) not in [list, tuple]:
                 v = [v]
             mapped_k = _remap_key(k)
             for value in v:
                 new_line = self._new_line(mapped_k, value)
-                self.lines_.append(ConfigLine(line=new_line, host=host, key=mapped_k, value=value))
-        self.lines_.append(ConfigLine(line="", host=None))
+                self.lines_.append(ConfigLine(path=self.root_path_, line=new_line, ref=new_host_ref, key=mapped_k, value=value))
+        self.lines_.append(ConfigLine(path=self.root_path_, line="", ref=new_host_ref))
 
     def remove(self, host):
         """
@@ -320,11 +353,10 @@ class SshConfigFile(object):
         ----------
         host : The host to remove
         """
-        if host not in self.hosts_:
+        if host not in self.hosts():
             raise ValueError("Host %s: not found." % host)
-        self.hosts_.remove(host)
         # remove lines, including comments inside the host lines
-        host_lines = [ idx for idx, x in enumerate(self.lines_) if x.host == host ]
+        host_lines = [ idx for idx, x in enumerate(self.lines_) if x.is_host(host) and x.key is not None ]
         remove_range = reversed(range(min(host_lines), max(host_lines) + 1))
         for idx in remove_range:
             del self.lines_[idx]
@@ -334,7 +366,7 @@ class SshConfigFile(object):
         Return the configuration as a string.
         """
         def the_filter(k):
-            if filter_includes and k is not None and k.lower() == "include":
+            if filter_includes and k is not None and k == "include":
                 return False
             else:
                 return True
@@ -352,186 +384,11 @@ class SshConfigFile(object):
         with open(path, "w") as fh_:
             fh_.write(self.config())
 
-    def add_raw(self, line, host=None, key=None, value=None):
-        """Adds a line to configuration"""
-        self.lines_.append(ConfigLine(line=line, host=host, key=key, value=value))
-            
+
     def _new_line(self, key, value):
-        return "%s%s %s" % (self.indent, key, str(value))
+        return "%s%s %s" % (self.indent_, key, str(value))
 
 
 def _resolve_includes(base_path, path):
-    search_path = os.path.join(base_path, path)
+    search_path = os.path.join(base_path, os.path.expanduser(path))
     return glob.glob(search_path)
-
-
-def read_ssh_config(master_path):
-    """Read SSH config from master file and process include directives"""
-    base_path = os.path.dirname(master_path)
-    master_config = read_ssh_config_file(master_path)
-    configs = []
-    queue = [(master_path, master_config)]
-    while len(queue) > 0:
-        cur_path, cur_config = queue.pop()
-        cur_includes = [ x.value for x in cur_config.lines_ if x.key is not None and x.key.lower() == "include" ]
-        configs.append((cur_path, cur_config))
-        for cur_include in cur_includes:
-            for new_path in _resolve_includes(base_path, cur_include):
-                new_config = read_ssh_config_file(new_path)
-                queue.append((new_path, new_config))
-
-    return SshConfig(base_path, configs)
-
-class SshConfig(object):
-    """Class for manipulating set of ssh config files"""
-    def __init__(self, base_path, configs):
-        self.base_path_ = base_path
-        self.configs_ = configs
-        self.base_config_ = configs[0][1]
-
-    def hosts(self):
-        """
-        Return the hosts found in the configuration.
-
-        Returns
-        -------
-        Tuple of Host entries (including "*" if found)
-        """
-        hosts = set()
-        for p, c in self.configs_:
-            hosts.update(c.hosts())
-        return tuple(hosts)
-
-    def host(self, host):
-        """
-        Return the configuration of a specific host as a dictionary.
-
-        Dictionary always contains lowercase versions of the attribute names.
-
-        Parameters
-        ----------
-        host : the host to return values for.
-
-        Returns
-        -------
-        dict of key value pairs, excluding "Host", empty map if host is not found.
-        """
-        for p, c in self.configs_:
-            if host in c.hosts_:
-                return c.host(host)
-        return {}
-    
-    def set(self, host, **kwargs):
-        """
-        Set configuration values for an existing host.
-        Overwrites values for existing settings, or adds new settings.
-
-        Parameters
-        ----------
-        host : the Host to modify.
-        **kwargs : The new configuration parameters
-        """
-        for p, c in self.configs_:
-            if host in c.hosts_:
-                c.set(host, **kwargs)
-                return
-        raise ValueError("Host %s: not found" % host)
-    
-    def unset(self, host, *args):
-        """
-        Removes settings for a host.
-
-        Parameters
-        ----------
-        host : the host to remove settings from.
-        *args : list of settings to removes.
-        """
-        for p, c in self.configs_:
-            if host in c.hosts_:
-                c.unset(host, *args)
-                return
-        raise ValueError("Host %s: not found" % host)
-
-    def rename(self, old_host, new_host):
-        """
-        Renames a host configuration.
-
-        Parameters
-        ----------
-        old_host : the host to rename.
-        new_host : the new host value
-        """
-        if new_host in self.hosts():
-            raise ValueError("Host %s: already exists." % new_host)
-        for p, c in self.configs_:
-            if old_host in c.hosts_:
-                c.rename(old_host, new_host)
-
-    def add(self, host, **kwargs):
-        """
-        Add another host to the SSH configuration.
-
-        Parameters
-        ----------
-        host: The Host entry to add.
-        **kwargs: The parameters for the host (without "Host" parameter itself)
-        """
-        self.base_config_.add(host, **kwargs)
-
-    def remove(self, host):
-        """
-        Removes a host from the SSH configuration.
-
-        Parameters
-        ----------
-        host : The host to remove
-        """
-        for p, c in self.configs_:
-            if host in c.hosts_:
-                c.remove(host)
-                return
-        raise ValueError("Host %s: not found" % host)
-
-
-    def add_include(self, path, config):
-        """
-        Creates a new Include in the main configuration.
-
-        Parameters
-        ----------
-        path : the path where the new config file is notfound
-
-        config : the new config
-        """
-        if not isinstance(config, SshConfigFile):
-            raise ValueError("config must be a SshConfigFile, see emtpy_ssh_config_file")
-        path = os.path.relpath(os.path.join(self.base_path_, path), self.base_path_)  # adjust for base_path
-        if path in [ p for p, c in self.configs_ ]:
-            raise ValueError("%s: already part of configuration" % path)
-        self.configs_.append((path, config))
-        self.base_config_.add_raw(line="Include %s" % path, key="Include", value=path)
-        
-
-    def config(self):
-        """
-        Return the configuration as a string (without includes).
-        """
-        return "\n".join([ c.config(True) for p, c in self.configs_ ])
-
-    def write(self, path):
-        """
-        Write configuration to a new files
-
-        Parameters
-        ----------
-        path : The file to write to
-        """
-        with open(path, "w") as fh_:
-            fh_.write(self.config())
-    
-    def save(self):
-        """
-        Saves (updated) ssh configuration
-        """
-        for p, c in self.configs_:
-            c.write(p)

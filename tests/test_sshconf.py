@@ -20,7 +20,7 @@ def test_parsing():
 
 def test_set():
     c = sshconf.read_ssh_config(test_config)
-
+    print("lines", c.lines_)
     c.set("svu", Compression="no", Port=2222)
 
     print(c.config())
@@ -156,10 +156,12 @@ def test_remove():
     try:
         c = sshconf.read_ssh_config(test_config)
 
+        print("config_before", c.config())
         assert 14 == lines(test_config)
 
         c.remove("svu")
         c.write(tc)
+        print("config", c.config())
 
         assert 9 == lines(tc)
         assert "# within-host-comment" not in c.config()
@@ -232,11 +234,12 @@ def test_save_with_included(tmpdir):
     incl = tmpdir.join("included_host")
 
     conf.write("""
+Include included_host
+
 Host svu.local
     Hostname ssh.svu.local
     User something
 
-Include included_host
     """)
 
     incl.write("""
@@ -271,11 +274,12 @@ def test_read_included_glob(tmpdir):
     incl = tmpdir.mkdir("conf.d").join("included_host")
 
     conf.write("""
+Include conf.d/*
+
 Host svu.local
     Hostname ssh.svu.local
     User something
 
-Include conf.d/*
     """)
 
     incl.write("""
