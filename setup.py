@@ -20,11 +20,12 @@ setup(
     py_modules=['sshconf'],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
-    classifiers=(
+    data_files=['version.txt'],
+    classifiers=[
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Libraries',
-    )
+    ]
 )
