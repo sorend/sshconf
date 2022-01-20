@@ -18,8 +18,6 @@ setup(
     license='MIT',
     keywords=['ssh', 'config'],
     py_modules=['sshconf'],
-    setup_requires=[],
-    tests_require=['pytest-runner', 'pytest'],
     data_files=['version.txt'],
     classifiers=[
         'License :: OSI Approved :: MIT License',
