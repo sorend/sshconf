@@ -1,0 +1,16 @@
+[project]
+name = "sshconf"
+version = "0.1.0"
+description = "Lightweight SSH config library"
+authors = [
+    {name = "Søren A D", email = "sorend@acm.org"},
+]
+dependencies = [    ]
+license = {text = "MIT"}
+
+[project.urls]
+homepage = "https://github.com/sorend/sshconf"
+
+[build-system]
+requires = ["pip", "versiontag", "setuptools"]
+build-backend = "setuptools.build_meta"
