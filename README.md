@@ -19,44 +19,46 @@ Installation and usage
 
 Install through pip is the most easy way. You can install from the Git source directly:
 
-    pip install sshconf
-
+```bash
+pip install sshconf
+```
 
 Below is some example use:
 
-    from __future__ import print_function
-    from sshconf import read_ssh_config, empty_ssh_config
-    from os.path import expanduser
+```python
+from __future__ import print_function
+from sshconf import read_ssh_config, empty_ssh_config
+from os.path import expanduser
 
-    c = read_ssh_config(expanduser("~/.ssh/config"))
-    print("hosts", c.hosts())
+c = read_ssh_config(expanduser("~/.ssh/config"))
+print("hosts", c.hosts())
 
-    # assuming you have a host "svu"
-    print("svu host", c.host("svu"))  # print the settings
-    c.set("svu", Hostname="ssh.svu.local", Port=1234)
-    print("svu host now", c.host("svu"))
-    c.unset("svu", "port")
-    print("svu host now", c.host("svu"))
+# assuming you have a host "svu"
+print("svu host", c.host("svu"))  # print the settings
+c.set("svu", Hostname="ssh.svu.local", Port=1234)
+print("svu host now", c.host("svu"))
+c.unset("svu", "port")
+print("svu host now", c.host("svu"))
 
-    c.add("newsvu", Hostname="ssh-new.svu.local", Port=22, User="stud1234")
-    print("newsvu", c.host("newsvu"))
+c.add("newsvu", Hostname="ssh-new.svu.local", Port=22, User="stud1234")
+print("newsvu", c.host("newsvu"))
 
-    c.rename("newsvu", "svu-new")
-    print("svu-new", c.host("svu-new"))
+c.rename("newsvu", "svu-new")
+print("svu-new", c.host("svu-new"))
 
-    # overwrite existing file(s)
-    c.save()
+# overwrite existing file(s)
+c.save()
 
-    # write all to a new file
-    c.write(expanduser("~/.ssh/newconfig"))
+# write all to a new file
+c.write(expanduser("~/.ssh/newconfig"))
 
-    # creating a new config file.
-    c2 = empty_ssh_config_file()
-    c2.add("svu", Hostname="ssh.svu.local", User="teachmca", Port=22)
-    c2.write("newconfig")
+# creating a new config file.
+c2 = empty_ssh_config_file()
+c2.add("svu", Hostname="ssh.svu.local", User="teachmca", Port=22)
+c2.write("newconfig")
 
-    c2.remove("svu")  # remove
-
+c2.remove("svu")  # remove
+```
 
 A few things to note:
 - `save()` overwrites the files you read from.
