@@ -1,15 +1,14 @@
-"""Lightweight SSH config library"""
+"""Lightweight SSH config library."""
 
 
 import os
 import re
 import glob
-from collections import defaultdict, namedtuple, Counter
+from collections import defaultdict, Counter
 
 try:
-    import sshconf_version
-    __version__ = sshconf_version.__version__
-except:
+    __version__ = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "version.txt")).read()
+except Exception:
     __version__ = "0.0.dev0"
 
 # taken from "man ssh"
@@ -109,10 +108,11 @@ KNOWN_PARAMS = (
     "XAuthLocation"
 )
 
-known_params = [x.lower() for x in KNOWN_PARAMS]  # pylint: disable=invalid-name
+known_params = [x.lower() for x in KNOWN_PARAMS]
 
-class ConfigLine:  # pylint: disable=too-few-public-methods
-    """ Holds configuration for a line in ssh config """
+
+class ConfigLine:
+    """Holds configuration for a line in ssh config."""
     def __init__(self, line, host=None, key=None, value=None):
         self.line = line
         self.host = host
@@ -180,7 +180,7 @@ class SshConfigFile(object):
         counter = Counter(indents)
         popular = list(reversed(sorted(counter.items(), key=lambda e: e[1])))
         self.indent = popular[0][0] if len(popular) > 0 else '  '
-        
+
 
     def hosts(self):
         """
@@ -346,7 +346,7 @@ class SshConfigFile(object):
                 return False
             else:
                 return True
-            
+
         return "\n".join([x.line for x in self.lines_ if the_filter(x.key)])
 
     def write(self, path):
@@ -422,7 +422,7 @@ class SshConfig(object):
             if host in c.hosts_:
                 return c.host(host)
         return {}
-    
+
     def set(self, host, **kwargs):
         """
         Set configuration values for an existing host.
@@ -438,7 +438,7 @@ class SshConfig(object):
                 c.set(host, **kwargs)
                 return
         raise ValueError("Host %s: not found" % host)
-    
+
     def unset(self, host, *args):
         """
         Removes settings for a host.
@@ -511,7 +511,7 @@ class SshConfig(object):
         """
         with open(path, "w") as fh_:
             fh_.write(self.config())
-    
+
     def save(self):
         """
         Saves (updated) ssh configuration
