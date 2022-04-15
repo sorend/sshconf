@@ -1,15 +1,12 @@
 """Lightweight SSH config library."""
 
+__version__ = "0.0.dev0"
 
 import os
 import re
 import glob
 from collections import defaultdict, Counter
 
-try:
-    __version__ = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "version.txt")).read()
-except Exception:
-    __version__ = "0.0.dev0"
 
 # taken from "man ssh"
 KNOWN_PARAMS = (

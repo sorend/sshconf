@@ -39,7 +39,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install versiontag flit
-          python -c 'import versiontag; print(versiontag.get_version(pypi=True))' > version.txt
+          python .ci/versioning.py
 
       - name: Install dependencies
         run: |
@@ -72,11 +72,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install versiontag flit
-          python -c 'import versiontag; print(versiontag.get_version(pypi=True))' > version.txt
+          python .ci/versioning.py
 
       - name: Publish
         run: |
-          ls -la
-          git status
           flit build
           flit publish
