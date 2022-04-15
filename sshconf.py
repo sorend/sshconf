@@ -1,8 +1,16 @@
+"""Lightweight SSH config library"""
+
 
 import os
 import re
 import glob
 from collections import defaultdict, namedtuple, Counter
+
+try:
+    import sshconf_version
+    __version__ = sshconf_version.__version__
+except:
+    __version__ = "0.0.dev0"
 
 # taken from "man ssh"
 KNOWN_PARAMS = (
