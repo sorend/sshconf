@@ -44,3 +44,6 @@ jobs:
       - name: Codecov upload
         run: codecov
 
+      - name: Test flit build
+        run: flit build
+
