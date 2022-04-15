@@ -31,7 +31,7 @@ jobs:
       - name: Dynamic versioning
         run: |
           python -m pip install --upgrade pip
-          pip install versiontag
+          pip install versiontag flit
           python -c 'import versiontag; print("__version__ = \"%s\"" % (versiontag.get_version(pypi=True)))' > sshconf_version.py
 
       - name: Install dependencies
@@ -65,7 +65,7 @@ jobs:
       - name: Dynamic versioning
         run: |
           python -m pip install --upgrade pip
-          pip install versiontag
+          pip install versiontag flit
           python -c 'import versiontag; print("__version__ = \"%s\"" % (versiontag.get_version(pypi=True)))' > sshconf_version.py
 
       - name: Publish
