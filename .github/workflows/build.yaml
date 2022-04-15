@@ -72,4 +72,6 @@ jobs:
 
       - name: Publish
         run: |
+          git status
+          flit build
           flit publish
