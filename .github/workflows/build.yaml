@@ -1,0 +1,89 @@
+name: CI_CD
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-
+    ${{ github.ref_type }}-
+    ${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  FLIT_USERNAME: ${{ secrets.FLIT_USERNAME }}
+  FLIT_PASSWORD: ${{ secrets.FLIT_PASSWORD }}
+  FLIT_INDEX_URL: ${{ secrets.FLIT_INDEX_URL }}
+  
+jobs:
+  test:
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      matrix:
+        platform: ["ubuntu-latest"]
+        python-version: [ "3.6", "3.7", "3.8", "3.9", "3.10" ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Dynamic versioning
+        run: |
+          python -m pip install --upgrade pip
+          pip install versiontag flit
+          python .ci/versioning.py
+
+      - name: Install dependencies
+        run: |
+          pip install -e '.[test]'
+
+      - name: Run tests
+        run: pytest tests
+
+      - name: Codecov upload
+        run: codecov
+
+  deploy:
+    runs-on: "ubuntu-latest"
+    needs: test
+    strategy:
+      matrix:
+        platform: ["ubuntu-latest"]
+        python-version: [ "3.6" ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Dynamic versioning
+        run: |
+          python -m pip install --upgrade pip
+          pip install versiontag flit
+          python .ci/versioning.py
+
+      - name: Publish testpypi
+        run: |
+          flit build
+          flit publish
+
+      - name: Publish pypi
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        run: |
+          export FLIT_INDEX_URL=${{ secrets.PROD_FLIT_INDEX_URL }}
+          export FLIT_USERNAME=${{ secrets.PROD_FLIT_USERNAME }}
+          export FLIT_PASSWORD=${{ secrets.PROD_FLIT_PASSWORD }}
+          flit publish
+          
+          
+          
