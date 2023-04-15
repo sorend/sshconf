@@ -27,7 +27,7 @@ Below is some example use:
 
 ```python
 from __future__ import print_function
-from sshconf import read_ssh_config, empty_ssh_config
+from sshconf import read_ssh_config, empty_ssh_config_file
 from os.path import expanduser
 
 c = read_ssh_config(expanduser("~/.ssh/config"))
