@@ -2,8 +2,8 @@
 sshconf
 ===========
 
-[![PyPi version](https://pypip.in/v/sshconf/badge.png)](https://github.com/sorend/sshconf)
-[![Build Status](https://travis-ci.com/sorend/sshconf.svg?branch=master)](https://travis-ci.com/sorend/sshconf)
+[![PyPI version](https://badge.fury.io/py/sshconf.svg)](https://pypi.org/project/sshconf/)
+[![Build Status](https://github.com/sorend/sshconf/actions/workflows/build.yaml/badge.svg)](https://github.com/sorend/sshconf/actions/workflows/build.yaml)
 [![codecov](https://codecov.io/gh/sorend/sshconf/branch/master/graph/badge.svg)](https://codecov.io/gh/sorend/sshconf)
 
 
