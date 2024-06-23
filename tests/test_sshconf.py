@@ -1,12 +1,11 @@
-﻿from __future__ import print_function
-import sshconf
+﻿import sshconf
 import pytest
-import shutil
 import os
 
 test_config = os.path.join(os.path.dirname(__file__), "test_config")
 test_config2 = os.path.join(os.path.dirname(__file__), "test_config2")
 test_config_include_specific = os.path.join(os.path.dirname(__file__), "test_config_include_specific")
+
 
 def test_parsing():
     c = sshconf.read_ssh_config(test_config)
@@ -18,6 +17,7 @@ def test_parsing():
     s2 = open(test_config).readlines()
     assert len(s1) == len(s2)
 
+
 def test_set():
     c = sshconf.read_ssh_config(test_config)
 
@@ -25,15 +25,17 @@ def test_set():
 
     print(c.config())
     print("svu", c.host('svu'))
-    
+
     assert "  Compression no" in c.config()
     assert "  Port 2222" in c.config()
+
 
 def test_set_host_failed():
     c = sshconf.read_ssh_config(test_config)
 
     with pytest.raises(ValueError):
         c.set("svu", Host="svu-new")
+
 
 def test_rename():
 
@@ -55,11 +57,13 @@ def test_rename():
     with pytest.raises(ValueError):  # we can't refer to the renamed host
         c.set("svu", Port=123)
 
+
 def test_update_fail():
     c = sshconf.read_ssh_config(test_config)
 
     with pytest.raises(ValueError):
         c.set("notfound", Port=1234)
+
 
 def test_add():
 
@@ -79,6 +83,7 @@ def test_add():
     with pytest.raises(ValueError):
         c.add("venkateswara")
 
+
 def test_save():
     import tempfile
     tc = os.path.join(tempfile.gettempdir(), "temp_ssh_config-4123")
@@ -97,6 +102,7 @@ def test_save():
     finally:
         os.remove(tc)
 
+
 def test_empty():
     import tempfile
     tc = os.path.join(tempfile.gettempdir(), "temp_ssh_config-123")
@@ -110,15 +116,30 @@ def test_empty():
     finally:
         os.remove(tc)
 
+
 def test_mapping_set_existing_key():
     c = sshconf.read_ssh_config(test_config)
     c.set("svu", Hostname="ssh.svuniversity.ac.in", User="mca", proxycommand="nc --help")
 
     print(c.config())
-    
+
     assert "Hostname ssh.svuniversity.ac.in" in c.config()
     assert "User mca" in c.config()
     assert "ProxyCommand nc --help" in c.config()
+
+
+def test_mapping_set_existing_key_multi_values():
+    c = sshconf.read_ssh_config(test_config)
+    c.set("svu", Hostname="ssh.svuniversity.ac.in", User="mca",
+          remoteforward=["localhost:3322 localhost:22",
+                         "localhost:10809 172.26.176.1:10809"])
+    print(c.config())
+
+    assert "Hostname ssh.svuniversity.ac.in" in c.config()
+    assert "User mca" in c.config()
+    assert "RemoteForward localhost:3322 localhost:22" in c.config()
+    assert "RemoteForward localhost:10809 172.26.176.1:10809" in c.config()
+
 
 def test_mapping_set_new_key():
     c = sshconf.read_ssh_config(test_config)
@@ -129,6 +150,7 @@ def test_mapping_set_new_key():
     assert "Port       22" in c.config()
     assert "ForwardAgent yes" in c.config()  # new parameter has been properly cased
     assert "unknownpropertylikethis noway" in c.config()
+
 
 def test_mapping_add_new_keys():
     c = sshconf.read_ssh_config(test_config)
@@ -144,6 +166,7 @@ def test_mapping_add_new_keys():
     assert "unknownpropertylikethis" in c.host("svu-new")
     assert "hostname" in c.host("svu-new")
     assert "user" in c.host("svu-new")
+
 
 def test_remove():
 
@@ -167,6 +190,7 @@ def test_remove():
     finally:
         os.remove(tc)
 
+
 def test_read_duplicate_keys():
 
     c = sshconf.read_ssh_config(test_config2)
@@ -175,6 +199,7 @@ def test_read_duplicate_keys():
     assert 5 == len(host.keys())
     assert "localforward" in host
     assert 2 == len(host["localforward"])
+
 
 def test_set_duplicate_keys():
 
@@ -200,6 +225,7 @@ def test_set_duplicate_keys():
     finally:
         os.remove(tc)
 
+
 def test_mapping_remove_existing_key():
     c = sshconf.read_ssh_config(test_config)
 
@@ -222,10 +248,11 @@ def test_read_included_specific():
     print("hosts", hosts)
 
     assert 'svuincluded' in hosts
-    
+
     h = c.host("svuincluded")
     print(h)
     print(c.config())
+
 
 def test_save_with_included(tmpdir):
     conf = tmpdir.join("config")
@@ -244,7 +271,7 @@ Host svu.included
     Hostname ssh.svu.included
     User whatever
     """)
-    
+
     c = sshconf.read_ssh_config(conf)
 
     hosts = c.hosts()
@@ -252,7 +279,7 @@ Host svu.included
 
     assert 'svu.local' in hosts
     assert 'svu.included' in hosts
-    
+
     h = c.host("svu.included")
     print(h)
 
@@ -265,7 +292,7 @@ Host svu.included
     assert "ssh2.svu.included" not in conf.read()
     assert "ssh2.svu.included" in incl.read()
 
-    
+
 def test_read_included_glob(tmpdir):
     conf = tmpdir.join("config")
     incl = tmpdir.mkdir("conf.d").join("included_host")

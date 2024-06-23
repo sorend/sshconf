@@ -26,7 +26,6 @@ pip install sshconf
 Below is some example use:
 
 ```python
-from __future__ import print_function
 from sshconf import read_ssh_config, empty_ssh_config_file
 from os.path import expanduser
 
@@ -40,7 +39,8 @@ print("svu host now", c.host("svu"))
 c.unset("svu", "port")
 print("svu host now", c.host("svu"))
 
-c.add("newsvu", Hostname="ssh-new.svu.local", Port=22, User="stud1234")
+c.add("newsvu", Hostname="ssh-new.svu.local", Port=22, User="stud1234",
+                RemoteForward=["localhost:2022 localhost:22", "localhost:2025 localhost:25"])
 print("newsvu", c.host("newsvu"))
 
 c.rename("newsvu", "svu-new")
