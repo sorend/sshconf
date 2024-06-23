@@ -110,6 +110,7 @@ known_params = [x.lower() for x in KNOWN_PARAMS]
 
 class ConfigLine:
     """Holds configuration for a line in ssh config."""
+
     def __init__(self, line, host=None, key=None, value=None):
         self.line = line
         self.host = host
@@ -119,6 +120,7 @@ class ConfigLine:
     def __repr__(self):
         return "'%s' host=%s key=%s value=%s" % (self.line, self.host, self.key, self.value)
 
+
 def read_ssh_config_file(path):
     """
     Read ssh config file and return parsed SshConfigFile
@@ -127,15 +129,18 @@ def read_ssh_config_file(path):
         lines = fh_.read().splitlines()
     return SshConfigFile(lines)
 
+
 def empty_ssh_config_file():
     """
     Creates a new empty ssh configuration.
     """
     return SshConfigFile([])
 
+
 def _key_value(line):
     upto_comment = line.split("#")[0]
     return [x.strip() for x in re.split(r"\s+", upto_comment.strip(), 1)]
+
 
 def _remap_key(key):
     """ Change key into correct casing if we know the parameter """
@@ -145,13 +150,16 @@ def _remap_key(key):
         return KNOWN_PARAMS[known_params.index(key.lower())]
     return key
 
+
 def _indent(s):
     return s[0: len(s) - len(s.lstrip())]
+
 
 class SshConfigFile(object):
     """
     Class for manipulating SSH configuration.
     """
+
     def __init__(self, lines):
         self.lines_ = []
         self.hosts_ = set()
@@ -177,7 +185,6 @@ class SshConfigFile(object):
         counter = Counter(indents)
         popular = list(reversed(sorted(counter.items(), key=lambda e: e[1])))
         self.indent = popular[0][0] if len(popular) > 0 else '  '
-
 
     def hosts(self):
         """
@@ -208,7 +215,9 @@ class SshConfigFile(object):
             for k, value in [(x.key.lower(), x.value) for x in self.lines_
                              if x.host == host and x.key.lower() != "host"]:
                 vals[k].append(value)
-            flatten = lambda x: x[0] if len(x) == 1 else x
+
+            def flatten(x):
+                return x[0] if len(x) == 1 else x
             return {k: flatten(v) for k, v in vals.items()}
         return {}
 
@@ -329,7 +338,7 @@ class SshConfigFile(object):
             raise ValueError("Host %s: not found." % host)
         self.hosts_.remove(host)
         # remove lines, including comments inside the host lines
-        host_lines = [ idx for idx, x in enumerate(self.lines_) if x.host == host ]
+        host_lines = [idx for idx, x in enumerate(self.lines_) if x.host == host]
         remove_range = reversed(range(min(host_lines), max(host_lines) + 1))
         for idx in remove_range:
             del self.lines_[idx]
@@ -374,7 +383,7 @@ def read_ssh_config(master_path):
     queue = [(master_path, master_config)]
     while len(queue) > 0:
         cur_path, cur_config = queue.pop()
-        cur_includes = [ x.value for x in cur_config.lines_ if x.key is not None and x.key.lower() == "include" ]
+        cur_includes = [x.value for x in cur_config.lines_ if x.key is not None and x.key.lower() == "include"]
         configs.append((cur_path, cur_config))
         for cur_include in cur_includes:
             for new_path in _resolve_includes(base_path, cur_include):
@@ -383,8 +392,10 @@ def read_ssh_config(master_path):
 
     return SshConfig(configs)
 
+
 class SshConfig(object):
     """Class for manipulating set of ssh config files"""
+
     def __init__(self, configs):
         self.configs_ = configs
 
@@ -491,12 +502,11 @@ class SshConfig(object):
                 return
         raise ValueError("Host %s: not found" % host)
 
-
     def config(self):
         """
         Return the configuration as a string (without includes).
         """
-        return "\n".join([ c.config(True) for p, c in self.configs_ ])
+        return "\n".join([c.config(True) for p, c in self.configs_])
 
     def write(self, path):
         """
