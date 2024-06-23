@@ -362,7 +362,7 @@ class SshConfigFile(object):
 
 
 def _resolve_includes(base_path, path):
-    search_path = os.path.join(base_path, path)
+    search_path = os.path.join(base_path, os.path.expanduser(path))
     return glob.glob(search_path)
 
 
