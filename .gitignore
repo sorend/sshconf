@@ -10,3 +10,4 @@ build
 version.txt
 .coverage
 sshconf_version.py
+*~

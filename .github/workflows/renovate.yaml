@@ -1,0 +1,42 @@
+
+name: Renovate
+on:
+  schedule:
+    # The "*" (#42, asterisk) character has special semantics in YAML, so this
+    # string has to be quoted.
+    - cron: '0 0 * * *'
+
+concurrency: renovate
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.6
+      - name: Validate Renovate JSON
+        run: jq type .github/renovate.json
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+      - name: Self-hosted Renovate
+        uses: renovatebot/github-action@v40.1.12
+        env:
+          # Repository taken from variable to keep configuration file generic
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          # Onboarding not needed for self hosted
+          RENOVATE_ONBOARDING: "false"
+          # Username for GitHub authentication (should match GitHub App name + [bot])
+          RENOVATE_USERNAME: "sorend-renovate-bot[bot]"
+          # Git commit author used, must match GitHub App
+          RENOVATE_GIT_AUTHOR: "sorend-renovate-bot <12314142+sorend-renovate-bot[bot]@users.noreply.github.com>"
+          # Use GitHub API to create commits (this allows for signed commits from GitHub App)
+          RENOVATE_PLATFORM_COMMIT: "true"
+          # Override schedule if set
+          RENOVATE_FORCE: ${{ github.event.inputs.overrideSchedule == 'true' && '{''schedule'':null}' || '' }}
+          LOG_LEVEL: ${{ inputs.logLevel || 'info' }}
+        with:
+          configurationFile: .github/renovate.json
+          renovate-version: full
+          token: ${{ steps.app-token.outputs.token }}
