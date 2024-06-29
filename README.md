@@ -43,6 +43,8 @@ c.add("newsvu", Hostname="ssh-new.svu.local", Port=22, User="stud1234",
                 RemoteForward=["localhost:2022 localhost:22", "localhost:2025 localhost:25"])
 print("newsvu", c.host("newsvu"))
 
+c.add("oldsvu", before_host="newsvu", Hostname="ssh-old.svu.local", Port=22, User="Stud1234")
+
 c.rename("newsvu", "svu-new")
 print("svu-new", c.host("svu-new"))
 
