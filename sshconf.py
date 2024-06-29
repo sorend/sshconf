@@ -155,6 +155,14 @@ def _indent(s):
     return s[0: len(s) - len(s.lstrip())]
 
 
+def _find_insert_idx(before_host, lines):
+    first_host_idx = next(idx for idx, x in enumerate(lines) if x.host == before_host)
+    for i in reversed(range(first_host_idx)):
+        if lines[i].host is not None:
+            return i+1
+    return 0
+
+
 class SshConfigFile(object):
     """
     Class for manipulating SSH configuration.
@@ -162,7 +170,7 @@ class SshConfigFile(object):
 
     def __init__(self, lines):
         self.lines_ = []
-        self.hosts_ = set()
+        self.hosts_ = []
         self.parse(lines)
 
     def parse(self, lines):
@@ -175,7 +183,7 @@ class SshConfigFile(object):
                 key, value = kv_
                 if key.lower() == "host":
                     cur_entry = value
-                    self.hosts_.add(value)
+                    self.hosts_.append(value)
                 else:
                     indents.append(_indent(line))
                 self.lines_.append(ConfigLine(line=line, host=cur_entry, key=key, value=value))
@@ -300,10 +308,9 @@ class SshConfigFile(object):
                 if line.key.lower() == "host":
                     line.value = new_host
                     line.line = "Host %s" % new_host
-        self.hosts_.remove(old_host)  # update host cache
-        self.hosts_.add(new_host)
+        self.hosts_[self.hosts_.index(old_host)] = new_host  # update host cache
 
-    def add(self, host, **kwargs):
+    def add(self, host, before_host=None, **kwargs):
         """
         Add another host to the SSH configuration.
 
@@ -314,17 +321,36 @@ class SshConfigFile(object):
         """
         if host in self.hosts_:
             raise ValueError("Host %s: exists (use update)." % host)
-        self.hosts_.add(host)
-        self.lines_.append(ConfigLine(line="", host=None))
-        self.lines_.append(ConfigLine(line="Host %s" % host, host=host, key="Host", value=host))
-        for k, v in kwargs.items():
-            if type(v) not in [list, tuple]:
-                v = [v]
-            mapped_k = _remap_key(k)
-            for value in v:
-                new_line = self._new_line(mapped_k, value)
-                self.lines_.append(ConfigLine(line=new_line, host=host, key=mapped_k, value=value))
-        self.lines_.append(ConfigLine(line="", host=None))
+
+        if before_host is not None and before_host not in self.hosts_:
+            raise ValueError("Host %s: not found, cannot insert before it." % host)
+
+        def kwargs_to_lines(kv):
+            lines = []
+            for k, v in kv.items():
+                if type(v) not in [list, tuple]:
+                    v = [v]
+                mapped_k = _remap_key(k)
+                for value in v:
+                    new_line = self._new_line(mapped_k, value)
+                    lines.append(ConfigLine(line=new_line, host=host, key=mapped_k, value=value))
+            return lines
+
+        new_lines = [
+            ConfigLine(line="", host=None),
+            ConfigLine(line="Host %s" % host, host=host, key="Host", value=host)
+        ] + kwargs_to_lines(kwargs) + [
+            ConfigLine(line="", host=None)
+        ]
+
+        if before_host is not None:
+            insert_idx = _find_insert_idx(before_host, self.lines_)
+            for idx, l in enumerate(new_lines):
+                self.lines_.insert(insert_idx + idx, l)
+            self.hosts_.insert(self.hosts_.index(before_host), host)
+        else:
+            self.lines_.extend(new_lines)
+            self.hosts_.append(host)
 
     def remove(self, host):
         """
@@ -336,12 +362,12 @@ class SshConfigFile(object):
         """
         if host not in self.hosts_:
             raise ValueError("Host %s: not found." % host)
-        self.hosts_.remove(host)
         # remove lines, including comments inside the host lines
         host_lines = [idx for idx, x in enumerate(self.lines_) if x.host == host]
         remove_range = reversed(range(min(host_lines), max(host_lines) + 1))
         for idx in remove_range:
             del self.lines_[idx]
+        self.hosts_.remove(host)
 
     def config(self, filter_includes=False):
         """
@@ -407,9 +433,9 @@ class SshConfig(object):
         -------
         Tuple of Host entries (including "*" if found)
         """
-        hosts = set()
+        hosts = []
         for p, c in self.configs_:
-            hosts.update(c.hosts())
+            hosts.extend(c.hosts())
         return tuple(hosts)
 
     def host(self, host):
@@ -477,7 +503,7 @@ class SshConfig(object):
             if old_host in c.hosts_:
                 c.rename(old_host, new_host)
 
-    def add(self, host, **kwargs):
+    def add(self, host, before_host=None, **kwargs):
         """
         Add another host to the SSH configuration.
 
@@ -486,7 +512,7 @@ class SshConfig(object):
         host: The Host entry to add.
         **kwargs: The parameters for the host (without "Host" parameter itself)
         """
-        self.configs_[0][1].add(host, **kwargs)
+        self.configs_[0][1].add(host, before_host=before_host, **kwargs)
 
     def remove(self, host):
         """

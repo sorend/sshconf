@@ -43,7 +43,13 @@ def test_rename():
 
     assert c.host("svu")["hostname"] == "www.svuniversity.ac.in"
 
+    hosts = c.hosts()
+
     c.rename("svu", "svu-new")
+
+    hosts2 = c.hosts()
+
+    assert hosts.index("svu") == hosts2.index("svu-new")  # order is the same
 
     assert "Host svu-new" in c.config()
     assert "Host svu\n" not in c.config()
@@ -69,8 +75,14 @@ def test_add():
 
     c = sshconf.read_ssh_config(test_config)
 
+    hosts = list(c.hosts())
+
     c.add("venkateswara", Hostname="venkateswara.onion", User="other", Port=22,
           ProxyCommand="nc -w 300 -x localhost:9050 %h %p")
+
+    hosts2 = list(c.hosts())
+
+    assert hosts + ["venkateswara"] == hosts2
 
     assert "venkateswara" in c.hosts()
     assert c.host("venkateswara")["proxycommand"] == "nc -w 300 -x localhost:9050 %h %p"
@@ -81,6 +93,42 @@ def test_add():
         c.add("svu")
 
     with pytest.raises(ValueError):
+        c.add("venkateswara")
+
+
+def test_add_before_host():
+
+    c = sshconf.read_ssh_config(test_config)
+
+    hosts = list(c.hosts())
+
+    c.add("venkateswara", before_host="svu", Hostname="venkateswara.onion", User="other", Port=22,
+          ProxyCommand="nc -w 300 -x localhost:9050 %h %p")
+
+    hosts2 = list(c.hosts())
+
+    c.add("venkateswara2", before_host="*", Hostname="venkateswara.onion", User="other", Port=22,
+          ProxyCommand="nc -w 300 -x localhost:9050 %h %p")
+
+    hosts3 = list(c.hosts())
+
+    new_config = c.config()
+
+    print("new config", new_config)
+
+    assert hosts == ["*", "svu"]
+    assert hosts2 == ["*", "venkateswara", "svu"]
+    assert hosts3 == ["venkateswara2", "*", "venkateswara", "svu"]
+
+    assert "venkateswara" in c.hosts()
+
+    assert "Host venkateswara" in new_config
+
+    with pytest.raises(ValueError):  # cant add before a host that is not found
+        c.add("svucs", before_host="not-found-host", Hostname="venkateswara.onion", User="other", Port=22,
+              ProxyCommand="nc -w 300 -x localhost:9050 %h %p")
+
+    with pytest.raises(ValueError):  # its there now
         c.add("venkateswara")
 
 
@@ -169,26 +217,34 @@ def test_mapping_add_new_keys():
 
 
 def test_remove():
+    c = sshconf.read_ssh_config(test_config)
 
-    def lines(fn):
-        with open(fn, "r") as f:
-            return len(f.read().splitlines())
+    c.add("abc", forwardAgent="yes", unknownpropertylikethis="noway", Hostname="ssh.svuni.local",
+          user="mmccaa")
 
-    import tempfile
-    tc = os.path.join(tempfile.gettempdir(), "temp_ssh_config-123")
-    try:
-        c = sshconf.read_ssh_config(test_config)
+    c.add("def", forwardAgent="yes", unknownpropertylikethis="noway", Hostname="ssh.svuni.local",
+          user="mmccaa")
 
-        assert 14 == lines(test_config)
+    config1 = c.config()
+    hosts = list(c.hosts())
+    c.remove("abc")
+    config2 = c.config()
+    hosts2 = list(c.hosts())
+    c.remove("svu")
+    config3 = c.config()
+    hosts3 = list(c.hosts())
 
-        c.remove("svu")
-        c.write(tc)
+    assert "abc" in hosts
+    assert "abc" not in hosts2
 
-        assert 9 == lines(tc)
-        assert "# within-host-comment" not in c.config()
+    assert "Host abc" in config1
+    assert "Host abc" not in config2
+    assert "Host svu" not in config3
 
-    finally:
-        os.remove(tc)
+    assert hosts2 == ["*", "svu", "def"]  # test order
+    assert hosts3 == ["*", "def"]
+
+    assert "# within-host-comment" not in config3
 
 
 def test_read_duplicate_keys():
