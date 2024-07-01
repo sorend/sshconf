@@ -7,7 +7,6 @@ venv
 dist
 build
 .pytest_cache
-version.txt
 .coverage
-sshconf_version.py
+coverage.xml
 *~

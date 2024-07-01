@@ -1,9 +1,9 @@
 [project]
 name = "sshconf"
 authors = [
-    {name = "Søren A D", email = "sorend@gmail.com"},
+    {name = "Søren A D", email = "soren@hamisoke.com"},
 ]
-dependencies = [ ]
+dependencies = []
 license = {file = "LICENSE"}
 dynamic = ["version", "description"]
 classifiers = [
@@ -31,4 +31,7 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.flit.sdist]
-include = ["version.txt"]
+exclude = [".gitignore", ".github", ".ci", "codecov.yml", "Makefile"]
+
+[tool.pytest.ini_options]
+addopts = "-v --cov-fail-under=60 --cov=sshconf"
