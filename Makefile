@@ -11,7 +11,7 @@ deps:
 version: deps
 	python .ci/versioning.py
 
-local_install: version deps
+local_install: deps
 	pip install -e '.[test]'
 
 wheel: local_install
