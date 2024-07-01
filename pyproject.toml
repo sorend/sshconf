@@ -23,7 +23,8 @@ homepage = "https://github.com/sorend/sshconf"
 
 [project.optional-dependencies]
 test = [
-	"pytest", "pytest-cov", "codecov"
+  "tox",
+  "tox-gh-actions",
 ]
 
 [build-system]
