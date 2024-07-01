@@ -8,10 +8,10 @@ all: build
 deps:
 	pip install versiontag flit
 
-$(VERSION_FILE): deps
+version: deps
 	python .ci/versioning.py
 
-local_install: $(VERSION_FILE) deps
+local_install: version deps
 	pip install -e '.[test]'
 
 wheel: local_install
