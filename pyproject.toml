@@ -28,11 +28,19 @@ test = [
 ]
 
 [build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["setuptools", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
 
-[tool.flit.sdist]
-exclude = [".gitignore", ".github", ".ci", "codecov.yml", "Makefile"]
+[tool.setuptools]
+py-modules = ["sshconf"]
+
+[tool.setuptools.dynamic]
+description = {file = "README.md"}
+
+[tool.setuptools_scm]
+write_to = "sshconf_version.py"
+fallback_version = "0.0.0"
+git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "*.*.*"]
 
 [tool.pytest.ini_options]
 addopts = "-v --cov-fail-under=60 --cov=sshconf"

@@ -10,3 +10,4 @@ build
 .coverage
 coverage.xml
 *~
+sshconf_version.py

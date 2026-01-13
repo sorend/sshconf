@@ -1,6 +1,9 @@
 """Lightweight SSH config library."""
 
-__version__ = "0.0.dev0"
+try:
+    from sshconf_version import __version__
+except ImportError:
+    __version__ = "0.0.0"
 
 import os
 import re
@@ -102,7 +105,7 @@ KNOWN_PARAMS = (
     "UserKnownHostsFile",
     "VerifyHostKeyDNS",
     "VisualHostKey",
-    "XAuthLocation"
+    "XAuthLocation",
 )
 
 known_params = [x.lower() for x in KNOWN_PARAMS]
@@ -118,7 +121,12 @@ class ConfigLine:
         self.value = value
 
     def __repr__(self):
-        return "'%s' host=%s key=%s value=%s" % (self.line, self.host, self.key, self.value)
+        return "'%s' host=%s key=%s value=%s" % (
+            self.line,
+            self.host,
+            self.key,
+            self.value,
+        )
 
 
 def read_ssh_config_file(path):
@@ -143,7 +151,7 @@ def _key_value(line):
 
 
 def _remap_key(key):
-    """ Change key into correct casing if we know the parameter """
+    """Change key into correct casing if we know the parameter"""
     if key in KNOWN_PARAMS:
         return key
     if key.lower() in known_params:
@@ -152,14 +160,14 @@ def _remap_key(key):
 
 
 def _indent(s):
-    return s[0: len(s) - len(s.lstrip())]
+    return s[0 : len(s) - len(s.lstrip())]
 
 
 def _find_insert_idx(before_host, lines):
     first_host_idx = next(idx for idx, x in enumerate(lines) if x.host == before_host)
     for i in reversed(range(first_host_idx)):
         if lines[i].host is not None:
-            return i+1
+            return i + 1
     return 0
 
 
@@ -186,13 +194,15 @@ class SshConfigFile(object):
                     self.hosts_.append(value)
                 else:
                     indents.append(_indent(line))
-                self.lines_.append(ConfigLine(line=line, host=cur_entry, key=key, value=value))
+                self.lines_.append(
+                    ConfigLine(line=line, host=cur_entry, key=key, value=value)
+                )
             else:
                 self.lines_.append(ConfigLine(line=line))
         # use most popular indent as indent for file, default '  '
         counter = Counter(indents)
         popular = list(reversed(sorted(counter.items(), key=lambda e: e[1])))
-        self.indent = popular[0][0] if len(popular) > 0 else '  '
+        self.indent = popular[0][0] if len(popular) > 0 else "  "
 
     def hosts(self):
         """
@@ -220,12 +230,16 @@ class SshConfigFile(object):
         """
         if host in self.hosts_:
             vals = defaultdict(list)
-            for k, value in [(x.key.lower(), x.value) for x in self.lines_
-                             if x.host == host and x.key.lower() != "host"]:
+            for k, value in [
+                (x.key.lower(), x.value)
+                for x in self.lines_
+                if x.host == host and x.key.lower() != "host"
+            ]:
                 vals[k].append(value)
 
             def flatten(x):
                 return x[0] if len(x) == 1 else x
+
             return {k: flatten(v) for k, v in vals.items()}
         return {}
 
@@ -246,15 +260,18 @@ class SshConfigFile(object):
                 values = [values]
 
             lower_key = key.lower()
-            update_idx = [idx for idx, x in enumerate(self.lines_)
-                          if x.host == host and x.key.lower() == lower_key]
+            update_idx = [
+                idx
+                for idx, x in enumerate(self.lines_)
+                if x.host == host and x.key.lower() == lower_key
+            ]
             extra_remove = []
             for idx in update_idx:
                 if values:  # values available, update the line
                     value = values.pop()
                     self.lines_[idx].line = self._new_line(self.lines_[idx].key, value)
                     self.lines_[idx].value = value
-                else:                # no more values available, remove the line
+                else:  # no more values available, remove the line
                     extra_remove.append(idx)
 
             for idx in reversed(sorted(extra_remove)):
@@ -262,11 +279,19 @@ class SshConfigFile(object):
 
             if values:
                 mapped_key = _remap_key(key)
-                max_idx = max([idx for idx, line in enumerate(self.lines_) if line.host == host])
+                max_idx = max(
+                    [idx for idx, line in enumerate(self.lines_) if line.host == host]
+                )
                 for value in values:
-                    self.lines_.insert(max_idx + 1, ConfigLine(line=self._new_line(mapped_key, value),
-                                                               host=host, key=mapped_key,
-                                                               value=value))
+                    self.lines_.insert(
+                        max_idx + 1,
+                        ConfigLine(
+                            line=self._new_line(mapped_key, value),
+                            host=host,
+                            key=mapped_key,
+                            value=value,
+                        ),
+                    )
 
     def unset(self, host, *args):
         """
@@ -278,8 +303,11 @@ class SshConfigFile(object):
         *args : list of settings to removes.
         """
         self.__check_host_args(host, args)
-        remove_idx = [idx for idx, x in enumerate(self.lines_)
-                      if x.host == host and x.key.lower() in args]
+        remove_idx = [
+            idx
+            for idx, x in enumerate(self.lines_)
+            if x.host == host and x.key.lower() in args
+        ]
         for idx in reversed(sorted(remove_idx)):
             del self.lines_[idx]
 
@@ -333,15 +361,19 @@ class SshConfigFile(object):
                 mapped_k = _remap_key(k)
                 for value in v:
                     new_line = self._new_line(mapped_k, value)
-                    lines.append(ConfigLine(line=new_line, host=host, key=mapped_k, value=value))
+                    lines.append(
+                        ConfigLine(line=new_line, host=host, key=mapped_k, value=value)
+                    )
             return lines
 
-        new_lines = [
-            ConfigLine(line="", host=None),
-            ConfigLine(line="Host %s" % host, host=host, key="Host", value=host)
-        ] + kwargs_to_lines(kwargs) + [
-            ConfigLine(line="", host=None)
-        ]
+        new_lines = (
+            [
+                ConfigLine(line="", host=None),
+                ConfigLine(line="Host %s" % host, host=host, key="Host", value=host),
+            ]
+            + kwargs_to_lines(kwargs)
+            + [ConfigLine(line="", host=None)]
+        )
 
         if before_host is not None:
             insert_idx = _find_insert_idx(before_host, self.lines_)
@@ -373,6 +405,7 @@ class SshConfigFile(object):
         """
         Return the configuration as a string.
         """
+
         def the_filter(k):
             if filter_includes and k is not None and k.lower() == "include":
                 return False
@@ -409,7 +442,11 @@ def read_ssh_config(master_path):
     queue = [(master_path, master_config)]
     while len(queue) > 0:
         cur_path, cur_config = queue.pop()
-        cur_includes = [x.value for x in cur_config.lines_ if x.key is not None and x.key.lower() == "include"]
+        cur_includes = [
+            x.value
+            for x in cur_config.lines_
+            if x.key is not None and x.key.lower() == "include"
+        ]
         configs.append((cur_path, cur_config))
         for cur_include in cur_includes:
             for new_path in _resolve_includes(base_path, cur_include):
