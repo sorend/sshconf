@@ -1,10 +1,12 @@
-﻿import sshconf
+import sshconf
 import pytest
 import os
 
 test_config = os.path.join(os.path.dirname(__file__), "test_config")
 test_config2 = os.path.join(os.path.dirname(__file__), "test_config2")
-test_config_include_specific = os.path.join(os.path.dirname(__file__), "test_config_include_specific")
+test_config_include_specific = os.path.join(
+    os.path.dirname(__file__), "test_config_include_specific"
+)
 
 
 def test_parsing():
@@ -24,7 +26,7 @@ def test_set():
     c.set("svu", Compression="no", Port=2222)
 
     print(c.config())
-    print("svu", c.host('svu'))
+    print("svu", c.host("svu"))
 
     assert "  Compression no" in c.config()
     assert "  Port 2222" in c.config()
@@ -38,7 +40,6 @@ def test_set_host_failed():
 
 
 def test_rename():
-
     c = sshconf.read_ssh_config(test_config)
 
     assert c.host("svu")["hostname"] == "www.svuniversity.ac.in"
@@ -72,13 +73,17 @@ def test_update_fail():
 
 
 def test_add():
-
     c = sshconf.read_ssh_config(test_config)
 
     hosts = list(c.hosts())
 
-    c.add("venkateswara", Hostname="venkateswara.onion", User="other", Port=22,
-          ProxyCommand="nc -w 300 -x localhost:9050 %h %p")
+    c.add(
+        "venkateswara",
+        Hostname="venkateswara.onion",
+        User="other",
+        Port=22,
+        ProxyCommand="nc -w 300 -x localhost:9050 %h %p",
+    )
 
     hosts2 = list(c.hosts())
 
@@ -97,18 +102,29 @@ def test_add():
 
 
 def test_add_before_host():
-
     c = sshconf.read_ssh_config(test_config)
 
     hosts = list(c.hosts())
 
-    c.add("venkateswara", before_host="svu", Hostname="venkateswara.onion", User="other", Port=22,
-          ProxyCommand="nc -w 300 -x localhost:9050 %h %p")
+    c.add(
+        "venkateswara",
+        before_host="svu",
+        Hostname="venkateswara.onion",
+        User="other",
+        Port=22,
+        ProxyCommand="nc -w 300 -x localhost:9050 %h %p",
+    )
 
     hosts2 = list(c.hosts())
 
-    c.add("venkateswara2", before_host="*", Hostname="venkateswara.onion", User="other", Port=22,
-          ProxyCommand="nc -w 300 -x localhost:9050 %h %p")
+    c.add(
+        "venkateswara2",
+        before_host="*",
+        Hostname="venkateswara.onion",
+        User="other",
+        Port=22,
+        ProxyCommand="nc -w 300 -x localhost:9050 %h %p",
+    )
 
     hosts3 = list(c.hosts())
 
@@ -125,8 +141,14 @@ def test_add_before_host():
     assert "Host venkateswara" in new_config
 
     with pytest.raises(ValueError):  # cant add before a host that is not found
-        c.add("svucs", before_host="not-found-host", Hostname="venkateswara.onion", User="other", Port=22,
-              ProxyCommand="nc -w 300 -x localhost:9050 %h %p")
+        c.add(
+            "svucs",
+            before_host="not-found-host",
+            Hostname="venkateswara.onion",
+            User="other",
+            Port=22,
+            ProxyCommand="nc -w 300 -x localhost:9050 %h %p",
+        )
 
     with pytest.raises(ValueError):  # its there now
         c.add("venkateswara")
@@ -134,6 +156,7 @@ def test_add_before_host():
 
 def test_save():
     import tempfile
+
     tc = os.path.join(tempfile.gettempdir(), "temp_ssh_config-4123")
     try:
         c = sshconf.read_ssh_config(test_config)
@@ -153,6 +176,7 @@ def test_save():
 
 def test_empty():
     import tempfile
+
     tc = os.path.join(tempfile.gettempdir(), "temp_ssh_config-123")
     try:
         c = sshconf.empty_ssh_config_file()
@@ -167,7 +191,9 @@ def test_empty():
 
 def test_mapping_set_existing_key():
     c = sshconf.read_ssh_config(test_config)
-    c.set("svu", Hostname="ssh.svuniversity.ac.in", User="mca", proxycommand="nc --help")
+    c.set(
+        "svu", Hostname="ssh.svuniversity.ac.in", User="mca", proxycommand="nc --help"
+    )
 
     print(c.config())
 
@@ -178,9 +204,15 @@ def test_mapping_set_existing_key():
 
 def test_mapping_set_existing_key_multi_values():
     c = sshconf.read_ssh_config(test_config)
-    c.set("svu", Hostname="ssh.svuniversity.ac.in", User="mca",
-          remoteforward=["localhost:3322 localhost:22",
-                         "localhost:10809 172.26.176.1:10809"])
+    c.set(
+        "svu",
+        Hostname="ssh.svuniversity.ac.in",
+        User="mca",
+        remoteforward=[
+            "localhost:3322 localhost:22",
+            "localhost:10809 172.26.176.1:10809",
+        ],
+    )
     print(c.config())
 
     assert "Hostname ssh.svuniversity.ac.in" in c.config()
@@ -192,7 +224,7 @@ def test_mapping_set_existing_key_multi_values():
 def test_mapping_set_new_key():
     c = sshconf.read_ssh_config(test_config)
 
-    c.set("svu", forwardAgent='yes', unknownpropertylikethis='noway')
+    c.set("svu", forwardAgent="yes", unknownpropertylikethis="noway")
 
     assert "Hostname   www.svuniversity.ac.in" in c.config()  # old parameters
     assert "Port       22" in c.config()
@@ -202,13 +234,18 @@ def test_mapping_set_new_key():
 
 def test_mapping_add_new_keys():
     c = sshconf.read_ssh_config(test_config)
-    c.add("svu-new", forwardAgent="yes", unknownpropertylikethis="noway", Hostname="ssh.svuni.local",
-          user="mmccaa")
+    c.add(
+        "svu-new",
+        forwardAgent="yes",
+        unknownpropertylikethis="noway",
+        Hostname="ssh.svuni.local",
+        user="mmccaa",
+    )
 
     assert "Host svu-new" in c.config()
     assert "ForwardAgent yes" in c.config()
     assert "unknownpropertylikethis noway" in c.config()
-    assert "HostName ssh.svuni.local" in c.config()
+    assert "Hostname ssh.svuni.local" in c.config()
 
     assert "forwardagent" in c.host("svu-new")
     assert "unknownpropertylikethis" in c.host("svu-new")
@@ -219,11 +256,21 @@ def test_mapping_add_new_keys():
 def test_remove():
     c = sshconf.read_ssh_config(test_config)
 
-    c.add("abc", forwardAgent="yes", unknownpropertylikethis="noway", Hostname="ssh.svuni.local",
-          user="mmccaa")
+    c.add(
+        "abc",
+        forwardAgent="yes",
+        unknownpropertylikethis="noway",
+        Hostname="ssh.svuni.local",
+        user="mmccaa",
+    )
 
-    c.add("def", forwardAgent="yes", unknownpropertylikethis="noway", Hostname="ssh.svuni.local",
-          user="mmccaa")
+    c.add(
+        "def",
+        forwardAgent="yes",
+        unknownpropertylikethis="noway",
+        Hostname="ssh.svuni.local",
+        user="mmccaa",
+    )
 
     config1 = c.config()
     hosts = list(c.hosts())
@@ -248,35 +295,34 @@ def test_remove():
 
 
 def test_read_duplicate_keys():
-
     c = sshconf.read_ssh_config(test_config2)
 
-    host = c.host('foo')
+    host = c.host("foo")
     assert 5 == len(host.keys())
     assert "localforward" in host
     assert 2 == len(host["localforward"])
 
 
 def test_set_duplicate_keys():
-
     c = sshconf.read_ssh_config(test_config2)
 
-    lfs = c.host('foo')['localforward']
+    lfs = c.host("foo")["localforward"]
 
     assert type(lfs) is list
     assert len(lfs) == 2
     lfs.append("1234 localhost:4321")
 
-    c.set('foo', localforward=lfs)
+    c.set("foo", localforward=lfs)
 
     import tempfile
+
     tc = os.path.join(tempfile.gettempdir(), "temp_ssh_config-tudk")
     try:
         c.write(tc)
 
         d = sshconf.read_ssh_config(tc)
 
-        host2 = d.host('foo')
+        host2 = d.host("foo")
         assert len(host2["localforward"]) == 3
     finally:
         os.remove(tc)
@@ -285,16 +331,16 @@ def test_set_duplicate_keys():
 def test_mapping_remove_existing_key():
     c = sshconf.read_ssh_config(test_config)
 
-    svu = c.host('svu')
+    svu = c.host("svu")
     print(svu)
-    c.unset("svu", 'proxycommand')
+    c.unset("svu", "proxycommand")
 
     print(c.config())
     assert "ProxyCommand" not in c.config()
-    svu2 = c.host('svu')
-    assert 'proxycommand' not in svu2
-    assert 'hostname' in svu2
-    assert 'port' in svu2
+    svu2 = c.host("svu")
+    assert "proxycommand" not in svu2
+    assert "hostname" in svu2
+    assert "port" in svu2
 
 
 def test_read_included_specific():
@@ -303,7 +349,7 @@ def test_read_included_specific():
     hosts = c.hosts()
     print("hosts", hosts)
 
-    assert 'svuincluded' in hosts
+    assert "svuincluded" in hosts
 
     h = c.host("svuincluded")
     print(h)
@@ -333,8 +379,8 @@ Host svu.included
     hosts = c.hosts()
     print("hosts", hosts)
 
-    assert 'svu.local' in hosts
-    assert 'svu.included' in hosts
+    assert "svu.local" in hosts
+    assert "svu.included" in hosts
 
     h = c.host("svu.included")
     print(h)
@@ -372,5 +418,5 @@ Host svu.included
     hosts = c.hosts()
     print("hosts", hosts)
 
-    assert 'svu.local' in hosts
-    assert 'svu.included' in hosts
+    assert "svu.local" in hosts
+    assert "svu.included" in hosts

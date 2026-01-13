@@ -44,3 +44,9 @@ git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--mat
 
 [tool.pytest.ini_options]
 addopts = "-v --cov-fail-under=60 --cov=sshconf"
+
+[dependency-groups]
+dev = [
+    "pytest>=6.1.2",
+    "pytest-cov>=2.12.1",
+]
